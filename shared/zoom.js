@@ -10,5 +10,5 @@ export function zoomState(progress,width,height,mirrorFit,reduced=false){
  const font=Math.min(48,Math.max(26.4,.036*width));
  const menuHeight=4*row+font*1.12+14;
  const finalMenu=Math.min(.84,end*MIRROR.width*.72/220,end*MIRROR.height*.76/menuHeight);
- return {scale,x:-MIRROR.x*scale,y:-MIRROR.y*scale,innerScale:reduced?1:Math.pow(2.8/1.15,1-first),menuScale:1+(finalMenu-1)*(reduced?1:ease(p))};
+ return {scale,x:-MIRROR.x*scale,y:-MIRROR.y*scale,innerScale:reduced?1:Math.pow(1.15,1-first),menuScale:1+(finalMenu-1)*(reduced?1:ease(p))};
 }

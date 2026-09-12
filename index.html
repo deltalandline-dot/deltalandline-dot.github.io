@@ -22,7 +22,7 @@ body{margin:0;overscroll-behavior:none}
 @media(max-width:600px){.navigation{gap:7px}}
 @media(prefers-reduced-motion:reduce){.journey{height:180svh}}
 </style>
-<script type="module" blocking="render" src="./shared/transitions.js?v=5ce1c26a06f5"></script></head>
+<script type="module" blocking="render" src="./shared/transitions.js?v=248f21465a39"></script></head>
 <body>
 <nav class="navigation" aria-label="Portfolio categories">
 <button type="button" aria-label="PEOPLE" style="--row:0"><span aria-hidden="true">P</span><span aria-hidden="true">E</span><span aria-hidden="true">O</span><span aria-hidden="true">P</span><span aria-hidden="true">L</span><span aria-hidden="true">E</span></button>
@@ -51,7 +51,7 @@ body{margin:0;overscroll-behavior:none}
 </svg></div>
 </div></main>
 <script type="module">
-import {zoomState} from './shared/zoom.js?v=5ce1c26a06f5';
+import {zoomState} from './shared/zoom.js?v=248f21465a39';
 const world=document.getElementById('world'),landscape=document.getElementById('landscape'),journey=document.getElementById('journey');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');const clamp=x=>Math.max(0,Math.min(1,x));const ease=x=>x*x*(3-2*x);let scheduled=false;
 const mask=document.querySelector('#mirror path'),portrait=document.getElementById('portrait');
