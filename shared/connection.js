@@ -1,4 +1,4 @@
-import {cloud} from './config.js?v=5484d2d8a493';
+import {cloud} from './config.js?v=a55de0a000d9';
 export const configured=Boolean(cloud.url&&cloud.publishableKey);
 const sessionKey='portfolio-login';
 function session(){try{return JSON.parse(sessionStorage.getItem(sessionKey)||'null');}catch{return null;}}

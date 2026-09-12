@@ -1,5 +1,5 @@
-import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=5484d2d8a493';
-import {DISPLAY_MS,choosePhoto,frameSize} from './gallery.js?v=5484d2d8a493';
+import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=a55de0a000d9';
+import {DISPLAY_MS,choosePhoto,frameSize} from './gallery.js?v=a55de0a000d9';
 const $=id=>document.getElementById(id);let photos=[],current=0,timer=null,showing=null,generation=0,selected=null,previewUrl=null,uploadId=null;
 $('menu-button').onclick=()=>{$('menu').hidden=!$('menu').hidden;$('menu-button').setAttribute('aria-expanded',String(!$('menu').hidden));};
 function resize(){if(!showing)return;const size=frameSize(innerWidth,innerHeight,showing.orientation==='portrait',innerWidth<=600?24:32);$('frame').style.width=size.width+'px';$('frame').style.height=size.height+'px';}

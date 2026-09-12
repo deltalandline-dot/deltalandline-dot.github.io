@@ -40,7 +40,7 @@ body{margin:0;overscroll-behavior:none}
 </svg></div>
 </div></main>
 <script type="module">
-import {zoomState} from './shared/zoom.js?v=5484d2d8a493';
+import {zoomState} from './shared/zoom.js?v=a55de0a000d9';
 const world=document.getElementById('world'),landscape=document.getElementById('landscape'),journey=document.getElementById('journey');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');const clamp=x=>Math.max(0,Math.min(1,x));const ease=x=>x*x*(3-2*x);let scheduled=false;
 const mask=document.querySelector('#mirror path'),portrait=document.getElementById('portrait');
@@ -67,4 +67,4 @@ function render(){
 }
 function schedule(){if(!scheduled){scheduled=true;requestAnimationFrame(render)}}addEventListener('scroll',schedule,{passive:true});addEventListener('resize',schedule);reduced.addEventListener('change',schedule);document.querySelector('[aria-label="IMAGES"]').onclick=()=>{location.href='./images/';};document.querySelector('[aria-label="POETRY"]').onclick=()=>{location.href='./poetry/';};render();
 </script>
-<script type="module" src="./shared/transitions.js?v=5484d2d8a493"></script></body></html>
+<script type="module" src="./shared/transitions.js?v=a55de0a000d9"></script></body></html>

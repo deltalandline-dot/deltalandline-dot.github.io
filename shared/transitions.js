@@ -7,8 +7,8 @@ styles.textContent=`
 .page-door,.page-arrival{position:fixed!important;inset:0!important;width:100vw!important;height:100%!important;border:0!important;margin:0!important;background:#f5f4ef;pointer-events:none!important}
 .page-arrival{z-index:10000;opacity:0}
 .page-door{z-index:10001;overflow:hidden;transform:translateX(0);will-change:transform;contain:paint}
-.page-door.left{clip-path:inset(0 50% 0 0)}
-.page-door.right{clip-path:inset(0 0 0 50%)}
+.page-door.left{clip-path:inset(0 calc(100% - var(--door-seam)) 0 0)}
+.page-door.right{clip-path:inset(0 0 0 var(--door-seam))}
 .page-door *{pointer-events:none!important;animation:none!important;transition:none!important;caret-color:transparent!important}
 `;
 document.head.append(styles);
@@ -21,18 +21,51 @@ function door(side){
  Object.assign(copy.style,{position:'absolute',top:-scrollY+'px',left:'0',width:document.documentElement.clientWidth+'px',margin:'0'});
  panel.append(copy);return panel;
 }
+function menuSeam(doc=document){
+ const letters=[...(doc?.querySelectorAll('.navigation button span')||[])];
+ const edges=letters.map(el=>el.getBoundingClientRect().left);
+ const width=document.documentElement.clientWidth;
+ return Math.max(0,Math.min(width,edges.length?Math.min(...edges)-18:width/2-128));
+}
+function arrival(destination){
+ const frame=document.createElement('iframe');
+ frame.className='page-arrival';frame.title='';frame.tabIndex=-1;frame.setAttribute('aria-hidden','true');frame.inert=true;
+ const ready=new Promise(resolve=>{frame.onload=resolve;frame.onerror=resolve;setTimeout(resolve,3500);});
+ frame.src=destination;return {frame,ready};
+}
 export async function navigateWithDoors(destination){
  if(navigating)return;
  if(reduced.matches){location.assign(destination);return;}
  navigating=true;
- const left=door('left'),right=door('right'),preview=document.createElement('iframe');
- preview.className='page-arrival';preview.title='';preview.tabIndex=-1;preview.setAttribute('aria-hidden','true');preview.inert=true;
- const ready=new Promise(resolve=>{preview.onload=resolve;preview.onerror=resolve;setTimeout(resolve,3500);});
- preview.src=destination;
- document.body.append(preview,left,right);
+ const home=['/','/index.html'].includes(new URL(destination,location.href).pathname);
+ const width=document.documentElement.clientWidth;
+ const preview=arrival(destination);
+ let left,right,seam;
  try{
-  await ready;preview.style.opacity='1';
-  await Promise.all([left.animate([{transform:'translateX(0)'},{transform:'translateX(-52%)'}],{duration:720,easing:'cubic-bezier(.65,0,.25,1)',fill:'forwards'}).finished,right.animate([{transform:'translateX(0)'},{transform:'translateX(52%)'}],{duration:720,easing:'cubic-bezier(.65,0,.25,1)',fill:'forwards'}).finished]);
+  if(home){
+   // Bring the destination in from both sides, closing over the departing page.
+   const other=arrival(destination);
+   left=document.createElement('div');right=document.createElement('div');
+   for(const [panel,side,frame] of [[left,'left',other.frame],[right,'right',preview.frame]]){
+    panel.className='page-door '+side;panel.inert=true;panel.setAttribute('aria-hidden','true');panel.style.visibility='hidden';
+    frame.style.opacity='1';panel.append(frame);
+   }
+   document.body.append(left,right);
+   await Promise.all([preview.ready,other.ready]);
+   seam=menuSeam(preview.frame.contentDocument);
+  }else{
+   seam=menuSeam();left=door('left');right=door('right');
+   document.body.append(preview.frame,left,right);
+   await preview.ready;preview.frame.style.opacity='1';
+  }
+  const offsets=[-(seam+2),width-seam+2];
+  const animations=[left,right].map((panel,index)=>{
+   panel.style.setProperty('--door-seam',seam+'px');
+   panel.style.visibility='visible';
+   const closed='translateX(0)',open=`translateX(${offsets[index]}px)`;
+   return panel.animate([{transform:home?open:closed},{transform:home?closed:open}],{duration:720,easing:'cubic-bezier(.65,0,.25,1)',fill:'forwards'}).finished;
+  });
+  await Promise.all(animations);
  }finally{location.assign(destination);}
 }
 document.addEventListener('click',event=>{
