@@ -1,5 +1,5 @@
-import {cloud} from './config.js?v=618b0b80a43e';
-import {configured,accessToken} from './connection.js?v=618b0b80a43e';
+import {cloud} from './config.js?v=975fc9e7353b';
+import {configured,accessToken} from './connection.js?v=975fc9e7353b';
 export async function publishedPoems(){
  const response=await fetch(configured?cloud.url+'/rest/v1/rpc/published_poems_with_credits':'/api/poems',configured?{method:'POST',headers:{apikey:cloud.publishableKey,'Content-Type':'application/json'},body:'{}'}:{});
  if(!response.ok)throw Error('The collection could not be loaded.');return response.json();

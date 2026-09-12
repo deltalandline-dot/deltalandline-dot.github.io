@@ -118,11 +118,11 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 .navigation button[hidden]{display:none!important}
 .navigation button:hover,.navigation button:focus-visible{color:var(--red);mix-blend-mode:normal;outline:none}
 .navigation .menu-item{opacity:1;visibility:visible;transition:left .42s ease .3s,opacity .28s ease .3s,visibility 0s}
-.navigation .menu-item[aria-label="POETRY"]{z-index:7;transition:left .42s ease,opacity .2s ease .14s,visibility 0s}
-.navigation .menu-toggle{left:50%;font-size:24px;letter-spacing:3px;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s ease,visibility 0s .16s}
-.navigation[data-collapsed="true"] .menu-item{left:50%;opacity:0;visibility:hidden;pointer-events:none;transition:left .42s ease,opacity .36s ease,visibility 0s .62s}
-.navigation[data-collapsed="true"] .menu-item[aria-label="POETRY"]{transition:left .42s ease,opacity .2s ease .42s,visibility 0s .62s}
-.navigation[data-collapsed="true"] .menu-toggle{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .2s ease .62s,visibility 0s .62s}
+
+.navigation .menu-toggle{left:50%;width:44px;height:52px;padding:6px;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s ease,visibility 0s .16s}
+.navigation[data-collapsed="true"] .menu-item{left:50%;opacity:0;visibility:hidden;pointer-events:none;transition:left .42s ease,opacity .36s ease,visibility 0s .36s}
+
+.navigation[data-collapsed="true"] .menu-toggle{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .2s ease .2s,visibility 0s .2s}
 .navigation .menu-toggle:focus-visible{opacity:1;visibility:visible;transition:none}
 .navigation[data-open="true"] .menu-item[aria-label]{opacity:1;visibility:visible;pointer-events:auto;transition:none}
 .navigation[data-open="true"] .menu-toggle{transition:none}
@@ -130,8 +130,18 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 .navigation[data-open="true"] .menu-item{left:50%;top:calc(min(var(--menu-y,25%),calc(100% - 264px)) + (var(--row) + 1)*44px)}
 .navigation[data-open="true"] .menu-toggle{top:min(var(--menu-y,25%),calc(100% - 264px))}
 @media(prefers-reduced-motion:reduce){.scroll-range{height:180svh}.navigation button{transition:none!important}}
+
+.navigation .menu-toggle svg{width:32px;height:40px;display:block}
+.navigation .menu-toggle,.navigation .menu-toggle:hover,.navigation .menu-toggle:focus-visible{color:white;mix-blend-mode:difference}
+.navigation .menu-mark-red{position:fixed;z-index:6;left:50%;top:var(--menu-y,25%);transform:translate(-50%,-50%);width:32px;height:40px;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .16s ease,visibility 0s .16s}
+.navigation[data-collapsed="true"] .menu-mark-red{opacity:1;visibility:visible;transition:opacity .2s ease .2s,visibility 0s .2s}
+.navigation[data-open="true"] .menu-mark-red{top:min(var(--menu-y,25%),calc(100% - 264px));transition:none}
+.navigation:has(.menu-toggle:focus-visible) .menu-mark-red{opacity:1;visibility:visible;transition:none}
+.navigation:not([data-ready="true"]) .menu-mark-red{transition:none!important}
+@media(prefers-reduced-motion:reduce){.navigation .menu-mark-red{transition:none!important}}
+.navigation .mark-hover{display:none}.navigation:has(.menu-toggle:hover,.menu-toggle:focus-visible) .mark-default{display:none}.navigation:has(.menu-toggle:hover,.menu-toggle:focus-visible) .mark-hover{display:inline}
 </style>
-<script type="module" blocking="render" src="./shared/transitions.js?v=618b0b80a43e"></script><link rel="modulepreload" href="shared/transitions.js?v=618b0b80a43e"><link rel="modulepreload" href="shared/zoom.js?v=618b0b80a43e"></head>
+<script type="module" blocking="render" src="./shared/transitions.js?v=975fc9e7353b"></script><link rel="modulepreload" href="shared/transitions.js?v=975fc9e7353b"><link rel="modulepreload" href="shared/zoom.js?v=975fc9e7353b"></head>
 <body>
 
 <div class="viewport">
@@ -155,7 +165,7 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 </div>
 <main class="journey" id="journey"><div class="scroll-range" aria-hidden="true"></div>
 <nav class="navigation" aria-label="Portfolio categories">
-<button id="menu-toggle" class="menu-toggle" type="button" aria-label="Open portfolio menu" aria-controls="menu-items" aria-expanded="false" hidden>...</button>
+<button id="menu-toggle" class="menu-toggle" type="button" aria-label="Open portfolio menu" aria-controls="menu-items" aria-expanded="false" hidden><svg viewBox="0 0 638 771" aria-hidden="true" focusable="false" fill="white"><g class="mark-default"><g><g transform="matrix(4.166667,0,0,4.166667,0,0)"><path d="M124,99C139.635,99 152.5,111.865 152.5,127.5C152.5,143.135 139.635,156 124,156L109,156L109,135L124,135C128.114,135 131.5,131.614 131.5,127.5C131.5,123.386 128.114,120 124,120L74,120L74,99L124,99Z"/><path d="M88,84L28.5,84C24.386,84 21,87.386 21,91.5C21,95.614 24.386,99 28.5,99L53,99L53,120L28.5,120C12.865,120 0,107.135 0,91.5C-0,75.865 12.865,63 28.5,63L88,63L88,84Z"/><path d="M124,27C139.635,27 152.5,39.865 152.5,55.5C152.5,71.135 139.635,84 124,84L109,84L109,63L124,63C128.114,63 131.5,59.614 131.5,55.5C131.5,51.386 128.114,48 124,48L74,48L74,28C74,27.661 74.024,27.327 74.071,27L124,27Z"/><path d="M53,48L23,48L32,37.5L23,27L53.018,27C53.006,27.332 53,27.665 53,28L53,48Z"/><g transform="matrix(1,0,0,1,0,108)"><path d="M88,48L23,48L32,37.5L23,27L88,27L88,48Z"/></g></g></g></g><g class="mark-hover"><g><g transform="matrix(4.166667,0,0,4.166667,0,0)"><rect x="88" y="48" width="21" height="51"/><path d="M109,120L109,157C109,172.454 96.454,185 81,185C65.546,185 53,172.454 53,157L53,156L74,156L74,157C74,160.863 77.137,164 81,164C84.863,164 88,160.863 88,157L88,120L109,120Z"/><rect x="53" y="84" width="21" height="51"/><path d="M53,63C53,63 53.006,27.332 53.018,27C53.545,12.009 65.881,0 81,0C96.119,0 108.455,12.009 108.982,27L87.929,27C87.443,23.61 84.524,21 81,21C77.476,21 74.557,23.61 74.071,27C74.024,27.327 74,63 74,63L53,63Z"/></g></g></g></svg></button><svg class="menu-mark-red" viewBox="0 0 638 771" aria-hidden="true" focusable="false" fill="#ff3028"><g class="mark-default"><g><g transform="matrix(4.166667,0,0,4.166667,0,0)"><rect x="88" y="48" width="21" height="51"/><path d="M109,120L109,157C109,172.454 96.454,185 81,185C65.546,185 53,172.454 53,157L53,156L74,156L74,157C74,160.863 77.137,164 81,164C84.863,164 88,160.863 88,157L88,120L109,120Z"/><rect x="53" y="84" width="21" height="51"/><path d="M53,63C53,63 53.006,27.332 53.018,27C53.545,12.009 65.881,0 81,0C96.119,0 108.455,12.009 108.982,27L87.929,27C87.443,23.61 84.524,21 81,21C77.476,21 74.557,23.61 74.071,27C74.024,27.327 74,63 74,63L53,63Z"/></g></g></g><g class="mark-hover"><g><g transform="matrix(4.166667,0,0,4.166667,0,0)"><path d="M124,99C139.635,99 152.5,111.865 152.5,127.5C152.5,143.135 139.635,156 124,156L109,156L109,135L124,135C128.114,135 131.5,131.614 131.5,127.5C131.5,123.386 128.114,120 124,120L74,120L74,99L124,99Z"/><path d="M88,84L28.5,84C24.386,84 21,87.386 21,91.5C21,95.614 24.386,99 28.5,99L53,99L53,120L28.5,120C12.865,120 0,107.135 0,91.5C-0,75.865 12.865,63 28.5,63L88,63L88,84Z"/><path d="M124,27C139.635,27 152.5,39.865 152.5,55.5C152.5,71.135 139.635,84 124,84L109,84L109,63L124,63C128.114,63 131.5,59.614 131.5,55.5C131.5,51.386 128.114,48 124,48L74,48L74,28C74,27.661 74.024,27.327 74.071,27L124,27Z"/><path d="M53,48L23,48L32,37.5L23,27L53.018,27C53.006,27.332 53,27.665 53,28L53,48Z"/><g transform="matrix(1,0,0,1,0,108)"><path d="M88,48L23,48L32,37.5L23,27L88,27L88,48Z"/></g></g></g></g></svg>
 <div id="menu-items">
 <button class="menu-item" type="button" aria-label="PEOPLE" style="--row:0"><span aria-hidden="true">P</span><span aria-hidden="true">E</span><span aria-hidden="true">O</span><span aria-hidden="true">P</span><span aria-hidden="true">L</span><span aria-hidden="true">E</span></button>
 <button class="menu-item" type="button" aria-label="IMAGES" style="--row:1"><span aria-hidden="true">I</span><span aria-hidden="true">M</span><span aria-hidden="true">A</span><span aria-hidden="true">G</span><span aria-hidden="true">E</span><span aria-hidden="true">S</span></button>
@@ -164,7 +174,7 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 <button class="menu-item" type="button" aria-label="MUSIC" style="--row:4"><span aria-hidden="true">M</span><span aria-hidden="true">U</span><span aria-hidden="true">S</span><span aria-hidden="true">I</span><span aria-hidden="true">C</span></button>
 </div></nav></main>
 <script type="module">
-import {zoomState,setCamera,menuFitsMirror,menuSkyY} from './shared/zoom.js?v=618b0b80a43e';
+import {zoomState,setCamera,menuFitsMirror,menuSkyY} from './shared/zoom.js?v=975fc9e7353b';
 const camera=document.getElementById('camera'),landscape=document.getElementById('landscape'),journey=document.getElementById('journey');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');const clamp=x=>Math.max(0,Math.min(1,x));const ease=x=>x*x*(3-2*x);let scheduled=false;
 const mask=document.querySelector('#mirror path'),portrait=document.getElementById('portrait');

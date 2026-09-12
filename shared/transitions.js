@@ -1,4 +1,4 @@
-import {setCamera} from './zoom.js?v=618b0b80a43e';
+import {setCamera} from './zoom.js?v=975fc9e7353b';
 // A single real navigation, with a solid curtain spanning the document change.
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const release=new URL(import.meta.url).searchParams.get('v');
@@ -26,7 +26,7 @@ html.site-arriving.site-reveal::after{animation:site-reveal .28s ease-out forwar
 @media(prefers-reduced-motion:reduce){html.site-arriving::after{display:none}}
 `;
 document.head.append(styles);
-function clean(){epoch++;unlockScroll();document.querySelectorAll('.site-curtain,.site-selected').forEach(el=>el.remove());document.getElementById('scroll-photo')?.style.removeProperty('opacity');document.documentElement.classList.remove('site-arriving','site-reveal','mountain-exit');document.querySelectorAll('#world,.navigation button,.mountain-layer,#mirror-paper,#scroll-photo').forEach(el=>el.getAnimations().forEach(a=>a.cancel()));navigating=false;revealing=false;dispatchEvent(new Event('site-home-render'));}
+function clean(){epoch++;unlockScroll();document.querySelectorAll('.site-curtain,.site-selected').forEach(el=>el.remove());document.getElementById('scroll-photo')?.style.removeProperty('opacity');document.documentElement.classList.remove('site-arriving','site-reveal','mountain-exit');document.querySelectorAll('#world,.navigation button,.menu-mark-red,.mountain-layer,#mirror-paper,#scroll-photo').forEach(el=>el.getAnimations().forEach(a=>a.cancel()));navigating=false;revealing=false;dispatchEvent(new Event('site-home-render'));}
 async function animate(el,frames,duration){try{await el.animate(frames,{duration:reduced.matches?0:duration,easing:'ease-in-out',fill:'forwards'}).finished;}catch{}}
 // Camera interpolation stays inside the fixed SVG viewport. CSS scaling the
 // full photographic world creates oversized raster tiles at the closest zoom.
@@ -55,7 +55,7 @@ async function mountainExit(token){
  const target=Math.max(Math.max(camera.clientWidth/538,camera.clientHeight/749)*2.5,start*1.25);
  await animate(document.getElementById('scroll-photo'),[{opacity:1},{opacity:0}],100);if(token!==epoch)return;
  const motions=[animateCamera(camera,start,target,token)];
- document.querySelectorAll('.navigation button').forEach(el=>motions.push(animate(el,[{opacity:1},{opacity:0}],260)));
+ document.querySelectorAll('.navigation button,.menu-mark-red').forEach(el=>motions.push(animate(el,[{opacity:1},{opacity:0}],260)));
  document.querySelectorAll('.mountain-layer').forEach((el,i)=>motions.push(animate(el,[{transform:'translate(0,0)'},{transform:`translate(${travel[i][0]}px,${travel[i][1]}px)`}],duration)));
  motions.push(animate(document.getElementById('mirror-paper'),[{fill:'#ebebeb'},{fill:getComputedStyle(document.documentElement).getPropertyValue('--paper').trim()||'#f5f4ef'}],duration));
  await Promise.all(motions);
@@ -114,7 +114,7 @@ async function mountainReturn(token){
  setCamera(camera,target,camera.clientWidth,camera.clientHeight);
  const motions=[animateCamera(camera,target,end,token)];
  document.querySelectorAll('.mountain-layer').forEach((el,i)=>motions.push(animate(el,[{transform:`translate(${travel[i][0]}px,${travel[i][1]}px)`},{transform:'translate(0,0)'}],duration)));
- document.querySelectorAll('.navigation button').forEach(el=>motions.push(animate(el,[{opacity:0},{opacity:0,offset:.72},{opacity:1}],duration)));
+ document.querySelectorAll('.navigation button,.menu-mark-red').forEach(el=>motions.push(animate(el,[{opacity:0},{opacity:0,offset:.72},{opacity:1}],duration)));
  motions.push(animate(document.getElementById('mirror-paper'),[{fill:getComputedStyle(document.documentElement).getPropertyValue('--paper').trim()||'#f5f4ef'},{fill:'#ebebeb'}],duration));
  document.documentElement.classList.remove('site-arriving','site-reveal');
  await Promise.all(motions);if(token!==epoch)return;await animate(document.getElementById('scroll-photo'),[{opacity:0},{opacity:1}],100);if(token===epoch)clean();
@@ -145,4 +145,4 @@ addEventListener('pageshow',event=>{if(event.persisted)clean();});
 addEventListener('pagehide',()=>{epoch++;unlockScroll();});
 addEventListener('resize',()=>{if(navigating)clean();});
 addEventListener('keydown',event=>{if(navigating&&['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' '].includes(event.key))event.preventDefault();});
-reduced.addEventListener('change',()=>{if(reduced.matches)document.querySelectorAll('#world,.navigation button,.mountain-layer,#mirror-paper,#scroll-photo').forEach(el=>el.getAnimations().forEach(a=>a.finish()));});
+reduced.addEventListener('change',()=>{if(reduced.matches)document.querySelectorAll('#world,.navigation button,.menu-mark-red,.mountain-layer,#mirror-paper,#scroll-photo').forEach(el=>el.getAnimations().forEach(a=>a.finish()));});
