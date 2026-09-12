@@ -8,7 +8,7 @@ export function menuDimensions(viewportWidth,viewportHeight){
 export function zoomState(progress,width,height,mirrorFit,reduced=false){
  const p=clamp(progress),first=ease(clamp(p/.45)),second=reduced?1:ease(clamp((p-.45)/.55));
  // Keep the mirror center stationary. Cover both sides of that fixed anchor.
- const end=Math.max(width/(2*Math.min(MIRROR.x,3000-MIRROR.x)),height/(2*Math.min(MIRROR.y,2000-MIRROR.y)));
+ const end=Math.max((width+4)/(2*Math.min(MIRROR.x,3000-MIRROR.x)),(height+4)/(2*Math.min(MIRROR.y,2000-MIRROR.y)));
  const scale=mirrorFit*Math.pow(end/mirrorFit,second);
  const menu=menuDimensions(width,height);
  const finalMenu=Math.min(.84,end*MIRROR.width*.72/menu.width,end*MIRROR.height*.76/menu.height);

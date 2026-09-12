@@ -10,10 +10,10 @@
 *{box-sizing:border-box}
 html{height:100%;overflow:hidden;overscroll-behavior:none;background:var(--ink);color:var(--paper);font-family:'Switzer',sans-serif}
 body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
-.journey{position:fixed;inset:0;height:100vh;height:100svh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;scrollbar-width:none}
+.journey{position:fixed;inset:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;scrollbar-width:none}
 .journey::-webkit-scrollbar{display:none}
 .scroll-range{height:580vh;height:580svh;pointer-events:none}
-.viewport{position:sticky;top:0;height:100vh;height:100svh;margin-bottom:-100svh;overflow:hidden;background:var(--ink)}
+.viewport{position:sticky;top:0;height:100vh;height:100dvh;margin-bottom:-100dvh;overflow:hidden;background:var(--ink);transform:translateZ(0);backface-visibility:hidden}
 .world{position:absolute;left:50%;top:50%;width:3000px;height:2000px;transform-origin:0 0;will-change:transform}
 .composition{width:100%;height:100%;display:block}
 #mountain-layers{display:inline}
@@ -26,7 +26,7 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 .navigation button:focus-visible{outline:1px solid currentColor;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){.scroll-range{height:180svh}}
 </style>
-<script type="module" blocking="render" src="./shared/transitions.js?v=5cd7cc2bcefb"></script></head>
+<script type="module" blocking="render" src="./shared/transitions.js?v=cdd4ef71c903"></script></head>
 <body>
 <main class="journey" id="journey">
 <nav class="navigation" aria-label="Portfolio categories">
@@ -56,7 +56,7 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 </svg></div>
 </div><div class="scroll-range" aria-hidden="true"></div></main>
 <script type="module">
-import {zoomState} from './shared/zoom.js?v=5cd7cc2bcefb';
+import {zoomState} from './shared/zoom.js?v=cdd4ef71c903';
 const world=document.getElementById('world'),landscape=document.getElementById('landscape'),journey=document.getElementById('journey');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');const clamp=x=>Math.max(0,Math.min(1,x));const ease=x=>x*x*(3-2*x);let scheduled=false;
 const mask=document.querySelector('#mirror path'),portrait=document.getElementById('portrait');
