@@ -1,15 +1,15 @@
-import {setCamera} from './zoom.js?v=c22e598a6f7d';
+import {setCamera} from './zoom.js?v=618b0b80a43e';
 // A single real navigation, with a solid curtain spanning the document change.
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const release=new URL(import.meta.url).searchParams.get('v');
 let navigating=false,revealing=false,epoch=0;
-let slicesReady;
+let slicesReady,slicesDecoded=false;
 function blockScroll(event){event.preventDefault();}
 // Clear departure UI before a native unsaved-change prompt, which may be cancelled.
 // Bind only during transitions so idle pages retain browser-history cache eligibility.
 function lockScroll(){for(const type of ['wheel','touchmove'])addEventListener(type,blockScroll,{passive:false});addEventListener('beforeunload',clean);}
 function unlockScroll(){for(const type of ['wheel','touchmove'])removeEventListener(type,blockScroll);removeEventListener('beforeunload',clean);}
-function ensureSlices(){return slicesReady??=Promise.all([...document.querySelectorAll('.mountain-layer image')].map(async el=>{const src=el.dataset.src;const image=new Image();image.src=src;await image.decode();el.setAttribute('href',src);})).then(()=>true,()=>{slicesReady=undefined;return false;});}
+function ensureSlices(){return slicesReady??=Promise.all([...document.querySelectorAll('.mountain-layer image')].map(async el=>{const src=el.dataset.src;const image=new Image();image.src=src;await image.decode();el.setAttribute('href',src);})).then(()=>{slicesDecoded=true;return true;},()=>{slicesReady=undefined;return false;});}
 async function prepareSlices(){return Promise.race([ensureSlices(),new Promise(resolve=>setTimeout(()=>resolve(false),300))]);}
 const travel=[[0,3800],[1700,3200],[-2100,4400]];
 const duration=750;
@@ -46,7 +46,7 @@ function animateCamera(camera,from,to,token){
  });
 }
 async function mountainExit(token){
- if(!await prepareSlices()||token!==epoch)return;
+ if(!slicesDecoded){ensureSlices();return;}if(token!==epoch)return;
  const camera=document.getElementById('camera');
  if(!camera)return;
  document.documentElement.classList.add('mountain-exit');
@@ -73,10 +73,23 @@ export async function navigateWithDoors(destination,control){
  if(token===epoch)location.assign(target.href);
 }
 // Warm the document on intent, without starting another app or fetching private data.
-const prefetched=new Set();
-function prefetch(url){if(release)url.searchParams.set('__site',release);if(url.origin!==location.origin||prefetched.has(url.href))return;prefetched.add(url.href);const link=document.createElement('link');link.rel='prefetch';link.href=url.href;document.head.append(link);}
+// Build replaces this public asset graph with the actual page dependency graphs.
+const destinationAssets={"/":["shared/zoom.js","shared/transitions.js"],"/images/":["images/app.js","images/gallery.js","shared/connection.js","shared/config.js","shared/transitions.js","shared/zoom.js"],"/poetry/":["poetry/app.js","poetry/order.js","shared/connection.js","shared/config.js","shared/poetry-store.js","shared/poem-format.js","shared/prosody.js","shared/poem-pdf.js","shared/venues.js","shared/submission-query.js","shared/save-queue.js","shared/transitions.js","shared/zoom.js"]};
+const prefetched=new Set(),warmedAssets=new Set();
+function warmDestination(url){
+ if(url.origin!==location.origin)return;
+ for(const path of destinationAssets[url.pathname]||[]){
+  const asset=new URL('/'+path,location.href);if(release)asset.searchParams.set('v',release);
+  if(warmedAssets.has(asset.href))continue;warmedAssets.add(asset.href);
+  const link=document.createElement('link');link.href=asset.href;
+  link.rel='modulepreload';
+  document.head.append(link);
+ }
+}
+
+function prefetch(url){warmDestination(url);if(release)url.searchParams.set('__site',release);if(url.origin!==location.origin||prefetched.has(url.href))return;prefetched.add(url.href);const link=document.createElement('link');link.rel='prefetch';link.href=url.href;document.head.append(link);}
 function controlDestination(control){let href=control?.getAttribute('href');if(!href&&isHome())href={IMAGES:'./images/',POETRY:'./poetry/'}[control?.getAttribute('aria-label')];return href;}
-for(const type of ['pointerover','focusin'])document.addEventListener(type,event=>{const control=event.target.closest('a,button'),href=controlDestination(control);if(!href||control.hasAttribute('download')||control.target==='_blank')return;const url=new URL(href,location.href);if(url.pathname!==location.pathname)prefetch(url);});
+for(const type of ['pointerover','focusin'])document.addEventListener(type,event=>{const control=event.target.closest('a,button'),href=controlDestination(control);if(!href||control.hasAttribute('download')||control.target==='_blank')return;const url=new URL(href,location.href);if(url.pathname!==location.pathname){prefetch(url);if(isHome())ensureSlices();}});
 document.addEventListener('click',event=>{
  if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
  const control=event.target.closest('a,button');if(!control)return;
@@ -116,7 +129,16 @@ function reveal(){
 }
 addEventListener('site-ready',reveal,{once:true});
 // Do not add a long artificial wait for section data or remote font loading.
-addEventListener('DOMContentLoaded',()=>{if(!isHome())setTimeout(reveal,0);else if(!reduced.matches)ensureSlices();},{once:true});
+addEventListener('DOMContentLoaded',()=>{
+ if(!isHome()){setTimeout(reveal,0);return;}
+ if(reduced.matches)return;
+ // Prioritize the two visible photographs before optional transition layers.
+ const visible=['portrait','scroll-photo'].map(id=>document.getElementById(id)?.getAttribute('href')).filter(Boolean);
+ Promise.all(visible.map(src=>{const image=new Image();image.src=src;return image.decode();})).then(()=>{
+  if(document.visibilityState==='hidden')return;
+  if(globalThis.requestIdleCallback)requestIdleCallback(()=>ensureSlices(),{timeout:1500});else setTimeout(()=>ensureSlices(),0);
+ }).catch(()=>{});
+},{once:true});
 addEventListener('DOMContentLoaded',()=>{if(isHome())reveal();},{once:true});
 addEventListener('pageshow',event=>{if(event.persisted)clean();});
 
