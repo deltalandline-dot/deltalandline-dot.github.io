@@ -1,12 +1,12 @@
-import {createSaveQueue} from '../shared/save-queue.js?v=dd99e2cbfb94';
-import {querySubmissions} from '../shared/submission-query.js?v=dd99e2cbfb94';
-import {listVenues,saveVenue} from '../shared/venues.js?v=dd99e2cbfb94';
-import {exportPoemPDF} from '../shared/poem-pdf.js?v=dd99e2cbfb94';
-import {analyzePoem} from '../shared/prosody.js?v=dd99e2cbfb94';
-import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=dd99e2cbfb94';
-import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=dd99e2cbfb94';
-import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=dd99e2cbfb94';
-import {readingOrder} from './order.js?v=dd99e2cbfb94';
+import {createSaveQueue} from '../shared/save-queue.js?v=5575cdb806b0';
+import {querySubmissions} from '../shared/submission-query.js?v=5575cdb806b0';
+import {listVenues,saveVenue} from '../shared/venues.js?v=5575cdb806b0';
+import {exportPoemPDF} from '../shared/poem-pdf.js?v=5575cdb806b0';
+import {analyzePoem} from '../shared/prosody.js?v=5575cdb806b0';
+import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=5575cdb806b0';
+import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=5575cdb806b0';
+import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=5575cdb806b0';
+import {readingOrder} from './order.js?v=5575cdb806b0';
 let venues=[],venueReady=false;const tableQueries=new Map();
 let readerFlight=null,readerLoaded=false,studioFlight=null;
 let backendReady=false,active,permissions={editPoems:false,manageSubmissions:false,comment:false},commentRequest=0,commentAnchor='';
@@ -27,7 +27,7 @@ $('previous').onclick=()=>turn(-1);$('next').onclick=()=>turn(1);pages.addEventL
 let resizeTimer;addEventListener('resize',()=>{const current=index;clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{pages.scrollTo({left:current*pages.clientWidth,behavior:'instant'});controls();},100);});
 function ensureReader(){if(readerLoaded)return Promise.resolve();if(!readerFlight)readerFlight=loadReader().finally(()=>{readerFlight=null;});return readerFlight;}
 async function loadReader(){
-try{const data=await publishedPoems();pages.replaceChildren();$('empty').hidden=true;const poems=data.filter(p=>typeof p.id==='string'&&typeof p.body==='string'&&p.published===true);let saved;try{saved=JSON.parse(sessionStorage.getItem('poetry-order'));}catch{}const order=readingOrder(poems,saved);try{sessionStorage.setItem('poetry-order',JSON.stringify(order));}catch{}count=order.length;for(const id of order){const poem=poems.find(p=>p.id===id),page=document.createElement('article'),content=document.createElement('div'),title=document.createElement('h1'),body=document.createElement('div');page.className='page';content.className='page-content';title.textContent=poem.title||'Untitled';body.className='poem';renderPoem(body,poem.body,poem.layout);const venues=Array.isArray(poem.publications)?[...new Set(poem.publications.filter(v=>typeof v==='string'&&v.trim()).map(v=>v.trim()))]:[];if(venues.length){const credit=document.createElement('p');credit.className='publication-credit';credit.textContent='Published in '+venues.join(', ');content.append(credit);}content.append(title,body);if(poem.author){const author=document.createElement('p');author.className='byline';author.textContent=poem.author;content.append(author);}page.append(content);pages.append(page);}if(count){pages.hidden=false;$('reader-footer').hidden=false;}if(!count){pages.hidden=true;$('empty').hidden=false;$('reader-footer').hidden=true;}controls();readerLoaded=true;}catch{pages.hidden=true;$('empty').hidden=false;$('reader-footer').hidden=true;$('empty-message').textContent='The collection couldn’t be loaded. Please try again later.';}
+try{const data=await publishedPoems();pages.replaceChildren();$('empty').hidden=true;const poems=data.filter(p=>typeof p.id==='string'&&typeof p.body==='string'&&p.published===true);let saved;try{saved=JSON.parse(sessionStorage.getItem('poetry-order'));}catch{}const order=readingOrder(poems,saved);try{sessionStorage.setItem('poetry-order',JSON.stringify(order));}catch{}count=order.length;for(const id of order){const poem=poems.find(p=>p.id===id),page=document.createElement('article'),content=document.createElement('div'),title=document.createElement('h1'),body=document.createElement('div');page.className='page';content.className='page-content';title.textContent=poem.title||'Untitled';body.className='poem';renderPoem(body,poem.body,poem.layout);const venues=Array.isArray(poem.publications)?[...new Set(poem.publications.filter(v=>typeof v==='string'&&v.trim()).map(v=>v.trim()))]:[];content.append(title,body);if(venues.length){const credit=document.createElement('p');credit.className='publication-credit';credit.textContent='Published in '+venues.join(', ');content.append(credit);}if(poem.author){const author=document.createElement('p');author.className='byline';author.textContent=poem.author;content.append(author);}page.append(content);pages.append(page);}if(count){pages.hidden=false;$('reader-footer').hidden=false;}if(!count){pages.hidden=true;$('empty').hidden=false;$('reader-footer').hidden=true;}controls();readerLoaded=true;}catch{pages.hidden=true;$('empty').hidden=false;$('reader-footer').hidden=true;$('empty-message').textContent='The collection couldn’t be loaded. Please try again later.';}
 if(currentView()==='read')dispatchEvent(new Event('site-ready'));
 }
 const key='verse-web-drafts-v1';let drafts=[],revisions={},submissions=[];
