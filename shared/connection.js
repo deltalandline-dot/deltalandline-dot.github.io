@@ -1,4 +1,4 @@
-import {cloud} from './config.js?v=94043ac38d83';
+import {cloud} from './config.js?v=f8ce8c71522b';
 export const configured=Boolean(cloud.url&&cloud.publishableKey);
 const sessionKey='portfolio-login';
 function session(){try{return JSON.parse(sessionStorage.getItem(sessionKey)||'null');}catch{return null;}}
@@ -27,7 +27,7 @@ export async function accessToken(){let value=session();if(!value)return null;if
  const response=await fetch(cloud.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:cloud.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:value.refresh_token})});if(!response.ok){sessionStorage.removeItem(sessionKey);return null;}value=await response.json();value.expires_at=Date.now()+value.expires_in*1000;sessionStorage.setItem(sessionKey,JSON.stringify(value));return value.access_token;
 }
 export function signOut(){sessionStorage.removeItem(sessionKey);}
-export async function listPhotos(){const response=await fetch(configured?cloud.url+'/functions/v1/gallery':'/api/images',{headers:configured?{apikey:cloud.publishableKey}:{}});if(!response.ok)throw Error('The gallery couldn’t be loaded.');return response.json();}
+export async function listPhotos(){const response=await fetch(configured?cloud.url+'/functions/v1/gallery':'/api/images');if(!response.ok)throw Error('The gallery couldn’t be loaded.');const photos=await response.json();return configured?photos.map(photo=>({...photo,url:cloud.url+'/functions/v1/gallery?image='+encodeURIComponent(photo.id)})):photos;}
 export async function publishPhoto(file,description,id){
  const headers={'Content-Type':file.type,'X-Photo-Description':encodeURIComponent(description),'X-Upload-Id':id};
  if(configured){const token=await accessToken();if(!token)throw Error('Sign in before publishing.');headers.Authorization='Bearer '+token;headers.apikey=cloud.publishableKey;}
@@ -39,3 +39,14 @@ export async function preparedPhoto(file){
  const canvas=document.createElement('canvas');canvas.width=Math.round(sw*scale);canvas.height=Math.round(sh*scale);const ctx=canvas.getContext('2d');ctx.fillStyle='#f5f4ef';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,0,0,canvas.width,canvas.height);img.close();
  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Couldn’t prepare this photograph.')),'image/jpeg',.88));
 }
+
+async function collectionRequest(method='GET',body){
+ if(!configured)throw Error('Collection management is available on the online site.');
+ const token=await accessToken();if(!token)throw Error('Sign in to manage your collection.');
+ const response=await fetch(cloud.url+'/functions/v1/gallery'+(method==='GET'?'?collection=1':''),{method,headers:{apikey:cloud.publishableKey,Authorization:'Bearer '+token,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+ const result=await response.json();if(!response.ok)throw Error(result.error||'Couldn’t update the collection.');
+ return method==='GET'?result.map(photo=>({...photo,url:cloud.url+'/functions/v1/gallery?image='+encodeURIComponent(photo.id)})):result;
+}
+export const listCollection=()=>collectionRequest();
+export const setPhotoFeatured=(id,featured)=>collectionRequest('PATCH',{id,featured});
+export const removePhoto=id=>collectionRequest('DELETE',{id});
