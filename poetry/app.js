@@ -1,6 +1,7 @@
-import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=734e8aa13c6e';
-import {publishedPoems,loadStudio,saveCollection} from '../shared/poetry-store.js?v=734e8aa13c6e';
-import {readingOrder} from './order.js?v=734e8aa13c6e';
+import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=5484d2d8a493';
+import {publishedPoems,loadStudio,saveCollection} from '../shared/poetry-store.js?v=5484d2d8a493';
+import {readingOrder} from './order.js?v=5484d2d8a493';
+let backendReady=false,active;
 const $=id=>document.getElementById(id),motion=matchMedia('(prefers-reduced-motion: reduce)');
 const menu=$('studio-menu');$('studio-toggle').onclick=()=>{menu.hidden=!menu.hidden;$('studio-toggle').setAttribute('aria-expanded',String(!menu.hidden));};
 function route(){const view=['write','review'].includes(location.hash.slice(1))?location.hash.slice(1):'read';for(const name of ['read','write','review'])$(name+'-view').hidden=name!==view;$('section-name').textContent=view.toUpperCase();menu.hidden=true;$('studio-toggle').setAttribute('aria-expanded','false');$('studio-auth').hidden=view==='read'||backendReady||!configured; if(view==='write'&&backendReady)openDraft(active);if(view==='review'&&backendReady)renderReview();for(const el of document.querySelectorAll('#write-view input,#write-view textarea,#write-view button,#review-view input,#review-view select,#review-view button'))el.disabled=!backendReady;}
@@ -11,9 +12,9 @@ function turn(direction){const target=Math.max(0,Math.min(count-1,index+directio
 $('previous').onclick=()=>turn(-1);$('next').onclick=()=>turn(1);pages.addEventListener('scroll',controls,{passive:true});pages.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();turn(e.key==='ArrowRight'?1:-1);}});
 let resizeTimer;addEventListener('resize',()=>{const current=index;clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{pages.scrollTo({left:current*pages.clientWidth,behavior:'instant'});controls();},100);});
 try{const data=await publishedPoems();const poems=data.filter(p=>typeof p.id==='string'&&typeof p.body==='string'&&p.published===true);let saved;try{saved=JSON.parse(sessionStorage.getItem('poetry-order'));}catch{}const order=readingOrder(poems,saved);try{sessionStorage.setItem('poetry-order',JSON.stringify(order));}catch{}count=order.length;for(const id of order){const poem=poems.find(p=>p.id===id),page=document.createElement('article'),content=document.createElement('div'),title=document.createElement('h1'),body=document.createElement('pre');page.className='page';content.className='page-content';title.textContent=poem.title||'Untitled';body.className='poem';body.textContent=poem.body;content.append(title,body);if(poem.author){const author=document.createElement('p');author.className='byline';author.textContent=poem.author;content.append(author);}page.append(content);pages.append(page);}if(!count){pages.hidden=true;$('empty').hidden=false;$('reader-footer').hidden=true;}controls();}catch{pages.hidden=true;$('empty').hidden=false;$('reader-footer').hidden=true;$('empty-message').textContent='The collection couldn’t be loaded. Please try again later.';}
-const key='verse-web-drafts-v1';let drafts=[];try{drafts=configured?[]:JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(drafts))drafts=[];}catch{}let revisions={},submissions=[],backendReady=false,saveQueue=Promise.resolve();
+const key='verse-web-drafts-v1';let drafts=[];try{drafts=configured?[]:JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(drafts))drafts=[];}catch{}let revisions={},submissions=[],saveQueue=Promise.resolve();
 try{await acceptSignInLink();const studio=await loadStudio();drafts=studio.drafts;submissions=studio.submissions;revisions=studio.revisions;backendReady=true;}catch(error){$('save-state').textContent=configured?error.message:'Studio unavailable — export a copy';}
-let active=drafts[0]?.id;
+active=drafts[0]?.id;
 function persist(){
  if(!configured)try{localStorage.setItem(key,JSON.stringify(drafts));}catch{}
  if(!backendReady){$('save-state').textContent='Studio offline — export a copy';return;}
