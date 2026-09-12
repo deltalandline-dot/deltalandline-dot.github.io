@@ -1,9 +1,9 @@
-import {exportPoemPDF} from '../shared/poem-pdf.js?v=966dee6ff1d2';
-import {analyzePoem} from '../shared/prosody.js?v=966dee6ff1d2';
-import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=966dee6ff1d2';
-import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=966dee6ff1d2';
-import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=966dee6ff1d2';
-import {readingOrder} from './order.js?v=966dee6ff1d2';
+import {exportPoemPDF} from '../shared/poem-pdf.js?v=3163301f6ef2';
+import {analyzePoem} from '../shared/prosody.js?v=3163301f6ef2';
+import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=3163301f6ef2';
+import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=3163301f6ef2';
+import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=3163301f6ef2';
+import {readingOrder} from './order.js?v=3163301f6ef2';
 let backendReady=false,active,permissions={editPoems:false,manageSubmissions:false,comment:false},commentRequest=0,commentAnchor='';
 const $=id=>document.getElementById(id),motion=matchMedia('(prefers-reduced-motion: reduce)');
 const menu=$('studio-menu');$('studio-toggle').onclick=()=>{menu.hidden=!menu.hidden;$('studio-toggle').setAttribute('aria-expanded',String(!menu.hidden));};
