@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head><meta name="referrer" content="no-referrer">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Delta — A change of perspective</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=switzer@500,600&amp;display=swap" rel="stylesheet">
+<style>
+:root{--ink:#111110;--paper:#f5f4ef;--red:#ff3028}
+*{box-sizing:border-box}
+html{background:var(--ink);color:var(--paper);font-family:'Switzer',sans-serif}
+body{margin:0}
+.journey{height:580vh;height:580svh}
+.viewport{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;background:var(--ink)}
+.world{position:absolute;left:50%;top:50%;width:3000px;height:2000px;transform-origin:0 0;will-change:transform}
+.composition{width:100%;height:100%;display:block}
+
+.navigation{display:contents}
+.navigation button{position:fixed;z-index:5;left:50%;top:calc(50% + (var(--row) - 2)*clamp(49px,calc(4.032vw + 19px),73px));transform:translate(-50%,-50%);width:220px;text-align:justify;text-align-last:justify;text-justify:inter-character;pointer-events:auto;display:flex;justify-content:space-between;background:transparent;border:0;color:#fff;mix-blend-mode:difference;font:600 clamp(26.4px,3.6vw,48px)/1.12 'Switzer',sans-serif;letter-spacing:-.025em;padding:7px 18px;min-height:44px;cursor:pointer}
+.navigation button:hover,.navigation button:focus-visible{color:var(--red);mix-blend-mode:normal}
+.navigation button:focus-visible{outline:1px solid currentColor;outline-offset:3px}
+@media(max-width:600px){.navigation{gap:7px}}
+@media(prefers-reduced-motion:reduce){.journey{height:180svh}}
+</style>
+</head>
+<body>
+<nav class="navigation" aria-label="Portfolio categories">
+<button type="button" aria-label="PEOPLE" style="--row:0"><span aria-hidden="true">P</span><span aria-hidden="true">E</span><span aria-hidden="true">O</span><span aria-hidden="true">P</span><span aria-hidden="true">L</span><span aria-hidden="true">E</span></button>
+<button type="button" aria-label="IMAGES" style="--row:1"><span aria-hidden="true">I</span><span aria-hidden="true">M</span><span aria-hidden="true">A</span><span aria-hidden="true">G</span><span aria-hidden="true">E</span><span aria-hidden="true">S</span></button>
+<button type="button" aria-label="POETRY" style="--row:2"><span aria-hidden="true">P</span><span aria-hidden="true">O</span><span aria-hidden="true">E</span><span aria-hidden="true">T</span><span aria-hidden="true">R</span><span aria-hidden="true">Y</span></button>
+<button type="button" aria-label="GAMES" style="--row:3"><span aria-hidden="true">G</span><span aria-hidden="true">A</span><span aria-hidden="true">M</span><span aria-hidden="true">E</span><span aria-hidden="true">S</span></button>
+<button type="button" aria-label="MUSIC" style="--row:4"><span aria-hidden="true">M</span><span aria-hidden="true">U</span><span aria-hidden="true">S</span><span aria-hidden="true">I</span><span aria-hidden="true">C</span></button>
+</nav>
+<main class="journey" id="journey"><div class="viewport">
+<div class="world" id="world">
+<svg class="composition" viewBox="0 0 3000 2000" role="img" aria-label="A black and white portrait with a mountain landscape inside the handheld mirror">
+<defs><clipPath id="mirror"><path d="M 1511 469 C 1362 512 1250 652 1249 837 C 1243 1024 1370 1177 1574 1209 C 1615 1150 1684 1090 1724 1020 C 1767 943 1790 872 1782 800 C 1774 654 1682 505 1511 469 Z"/></clipPath></defs>
+<image id="portrait" href="outer.png" width="3000" height="2000"/>
+<g id="photoClip" clip-path="url(#mirror)"><image id="landscape" href="inner.png" x="1248" y="463" width="538" height="749" preserveAspectRatio="xMidYMid slice"/></g>
+</svg></div>
+</div></main>
+<script>
+const world=document.getElementById('world'),landscape=document.getElementById('landscape'),journey=document.getElementById('journey');
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');const clamp=x=>Math.max(0,Math.min(1,x));const ease=x=>x*x*(3-2*x);let scheduled=false;
+const mask=document.querySelector('#mirror path'),portrait=document.getElementById('portrait');
+const pathLength=mask.getTotalLength();
+const boundary=Array.from({length:256},(_,i)=>{const point=mask.getPointAtLength(pathLength*i/256);return [point.x,point.y];});
+function inside(x,y){let hit=false;for(let i=0,j=boundary.length-1;i<boundary.length;j=i++){const [ax,ay]=boundary[i],[bx,by]=boundary[j];if((ay>y)!=(by>y)&&x<(bx-ax)*(y-ay)/(by-ay)+ax)hit=!hit;}return hit;}
+let fit=1,previousWidth=0,previousHeight=0;
+function fitMirror(w,h){let scale=Math.max(w/538,h/749);while(![-1,1].every(x=>[-1,1].every(y=>inside(1517+x*w/(2*scale),837.5+y*h/(2*scale)))))scale*=1.025;return scale*1.025;}
+
+function render(){
+ scheduled=false;
+ const w=innerWidth,h=innerHeight,p=clamp(scrollY/(journey.offsetHeight-h));
+ const first=ease(clamp(p/.45)),second=ease(clamp((p-.50)/.50));
+ if(w!==previousWidth||h!==previousHeight){fit=fitMirror(w,h);previousWidth=w;previousHeight=h;}
+ const end=Math.max(w/3000,h/2000);
+ const t=reduced.matches?1:second;
+ const scale=fit*Math.pow(end/fit,t);
+ const cx=1517+(1500-1517)*t,cy=837.5+(1000-837.5)*t;
+ world.style.transform=`translate(${-cx*scale}px,${-cy*scale}px) scale(${scale})`;
+ const initialZoom=2.8/1.15;
+ const innerScale=reduced.matches?1:initialZoom*Math.pow(1/initialZoom,first);
+ landscape.setAttribute('transform',`translate(1517 837.5) scale(${innerScale}) translate(-1517 -837.5)`);
+ // The aperture and portrait always share the same camera transform.
+ // At the handoff all four viewport corners are still inside the aperture.
+ mask.removeAttribute('transform');
+ portrait.style.opacity='1';
+
+}
+function schedule(){if(!scheduled){scheduled=true;requestAnimationFrame(render)}}addEventListener('scroll',schedule,{passive:true});addEventListener('resize',schedule);reduced.addEventListener('change',schedule);document.querySelector('[aria-label="IMAGES"]').onclick=()=>{location.href='./images/';};document.querySelector('[aria-label="POETRY"]').onclick=()=>{location.href='./poetry/';};render();
+</script>
+</body></html>
