@@ -15,4 +15,3 @@ html[data-theme] .theme-toggle:hover{color:var(--red,#ff3028)}
 html[data-theme] .theme-toggle:focus-visible{outline:2px solid var(--red,#ff3028);outline-offset:4px}
 @media(max-width:600px){html[data-theme] .theme-toggle{top:max(18px,env(safe-area-inset-top));right:calc(72px + env(safe-area-inset-right));width:64px;height:44px}}
 
-html[data-theme="dark"] input[type="date"],html[data-theme="dark"] .submission-table td:nth-child(3){color:#FFD74B}
