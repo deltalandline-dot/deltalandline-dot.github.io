@@ -2,15 +2,15 @@ import {cloud} from './config.js';
 export const configured=Boolean(cloud.url&&cloud.publishableKey);
 const sessionKey='portfolio-login';
 function session(){try{return JSON.parse(sessionStorage.getItem(sessionKey)||'null');}catch{return null;}}
-export async function signIn(email){
- const response=await fetch(cloud.url+'/auth/v1/otp?redirect_to='+encodeURIComponent(new URL('../images/',import.meta.url).href),{method:'POST',headers:{apikey:cloud.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:false})});
+export async function signIn(email,redirect=new URL('../images/',import.meta.url).href){
+ const response=await fetch(cloud.url+'/auth/v1/otp?redirect_to='+encodeURIComponent(redirect),{method:'POST',headers:{apikey:cloud.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:false})});
  if(!response.ok)throw Error('Couldn’t send a sign-in link. Check your email address and try again.');
 }
 export async function acceptSignInLink(){
  const params=new URLSearchParams(location.hash.slice(1));
  if(!params.has('access_token')&&!params.has('error_description'))return false;
  const token=params.get('access_token'),refresh=params.get('refresh_token'),error=params.get('error_description');
- history.replaceState(null,'',location.pathname+location.search+'#upload');
+ history.replaceState(null,'',location.pathname+location.search+(location.pathname.includes('/poetry')?'#write':'#upload'));
  if(error)throw Error('This sign-in link has expired or could not be used. Request another link.');
  if(!configured||!token||!refresh)throw Error('This sign-in link is incomplete. Request another link.');
  const response=await fetch(cloud.url+'/auth/v1/user',{headers:{apikey:cloud.publishableKey,Authorization:'Bearer '+token}});
