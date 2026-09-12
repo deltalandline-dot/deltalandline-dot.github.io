@@ -1,7 +1,7 @@
-import {cloud} from './config.js?v=6b345c65a25c';
-import {configured,accessToken} from './connection.js?v=6b345c65a25c';
+import {cloud} from './config.js?v=310475587968';
+import {configured,accessToken} from './connection.js?v=310475587968';
 export async function publishedPoems(){
- const response=await fetch(configured?cloud.url+'/rest/v1/rpc/published_poems':'/api/poems',configured?{method:'POST',headers:{apikey:cloud.publishableKey,'Content-Type':'application/json'},body:'{}'}:{});
+ const response=await fetch(configured?cloud.url+'/rest/v1/rpc/published_poems_with_credits':'/api/poems',configured?{method:'POST',headers:{apikey:cloud.publishableKey,'Content-Type':'application/json'},body:'{}'}:{});
  if(!response.ok)throw Error('The collection could not be loaded.');return response.json();
 }
 async function headers(){const token=await accessToken();if(!token)throw Error('Sign in to open your studio.');return {apikey:cloud.publishableKey,Authorization:'Bearer '+token,'Content-Type':'application/json'};}

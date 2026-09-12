@@ -8,3 +8,9 @@ export function choosePhoto(photos,currentId,random=Math.random){
  for(const entry of choices){draw-=entry.weight;if(draw<0)return entry.index;}return choices.at(-1).index;
 }
 export function frameSize(width,height,portrait,padding=32){const ratio=portrait?2/3:3/2;const availableWidth=Math.max(1,width-2*padding),availableHeight=Math.max(1,height-2*padding);const w=Math.min(availableWidth,availableHeight*ratio);return {width:w,height:w/ratio};}
+
+// Side frames expose one tenth of their own width, without cropping the main frame.
+export function photoPosition(width,height,portrait,slot='center',padding=32){
+ const fit=frameSize(width,height,portrait,padding),scale=Math.min(1,width*.78/fit.width),size={width:fit.width*scale,height:fit.height*scale};
+ return {...size,left:slot==='previous'?-size.width*.9:slot==='next'?width-size.width*.1:(width-size.width)/2,top:(height-size.height)/2};
+}

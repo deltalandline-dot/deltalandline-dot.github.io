@@ -1,0 +1,16 @@
+html[data-theme="light"]{color-scheme:light}
+html[data-theme="dark"]{--paper:#121212;--ink:#f5f4ef;--red:#ff3028;color-scheme:dark;background:var(--paper);color:var(--ink)}
+html[data-theme="dark"] body{background:var(--paper);color:var(--ink)}
+html[data-theme] .site-curtain,html[data-theme].site-arriving,html[data-theme].site-arriving::after{background:var(--paper,#f5f4ef)!important}
+html[data-theme="dark"] :is(.note,.save-state,.queue-state,.empty p,footer small){color:#b8b8b8}
+html[data-theme="dark"] .empty{color:#b8b8b8}
+html[data-theme="dark"] :is(input,textarea,select){color:var(--ink);border-color:#f5f4ef55}
+html[data-theme="dark"] :is(input,textarea)::placeholder{color:#aaaaaa;opacity:1}
+html[data-theme="dark"] option{background:var(--paper);color:var(--ink)}
+html[data-theme="dark"] :is(.menu,.studio-menu,.upload-queue li,.history-item,.publication-row,.submission-record,.submission-table th,.submission-table td){border-color:#f5f4ef33}
+html[data-theme="dark"] .submission-table tbody tr:hover{background:#f5f4ef08}
+html[data-theme="dark"] .collection-card img{background:#f5f4ef08}
+html[data-theme] .theme-toggle{position:absolute;z-index:20;top:28px;right:80px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:50%;background:var(--paper,#f5f4ef);color:var(--ink,#111110);font:24px/1 Switzer,Arial,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}
+html[data-theme] .theme-toggle:hover{color:var(--red,#ff3028)}
+html[data-theme] .theme-toggle:focus-visible{outline:2px solid var(--red,#ff3028);outline-offset:4px}
+@media(max-width:600px){html[data-theme] .theme-toggle{top:max(18px,env(safe-area-inset-top));right:calc(72px + env(safe-area-inset-right));width:44px;height:44px}}

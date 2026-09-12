@@ -14,3 +14,13 @@ export function zoomState(progress,width,height,mirrorFit,reduced=false){
  const finalMenu=Math.min(.84,end*MIRROR.width*.72/menu.width,end*MIRROR.height*.76/menu.height);
  return {scale,x:-MIRROR.x*scale,y:-MIRROR.y*scale,innerScale:reduced?1:Math.pow(1.15,1-first),menuScale:1+(finalMenu-1)*(reduced?1:ease(p))};
 }
+
+// Move the SVG camera within a viewport-sized surface, never a giant CSS layer.
+export function cameraViewBox(scale,width,height){
+ const w=width/scale,h=height/scale;
+ return `${MIRROR.x-w/2} ${MIRROR.y-h/2} ${w} ${h}`;
+}
+export function setCamera(camera,scale,width,height){
+ camera.setAttribute('viewBox',cameraViewBox(scale,width,height));
+ camera.dataset.scale=String(scale);
+}
