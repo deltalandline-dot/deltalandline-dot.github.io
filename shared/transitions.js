@@ -2,6 +2,12 @@
 // The real navigation follows the animation, preserving ordinary URLs/history.
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 let navigating=false;
+const release=new URL(import.meta.url).searchParams.get('v');
+// Version page requests as well as modules: Pages may retain older HTML in cache.
+// Keep this transport detail out of the address bar after the page has loaded.
+const address=new URL(location.href);
+if(address.searchParams.has('__site')){address.searchParams.delete('__site');history.replaceState(history.state,'',address.pathname+address.search+address.hash);}
+
 const styles=document.createElement('style');
 styles.textContent=`
 .page-door,.page-arrival{position:fixed!important;inset:0!important;width:100vw!important;height:100%!important;border:0!important;margin:0!important;background:#f5f4ef;pointer-events:none!important}
@@ -35,6 +41,7 @@ function arrival(destination){
 }
 export async function navigateWithDoors(destination){
  if(navigating)return;
+ const target=new URL(destination,location.href);if(release)target.searchParams.set('__site',release);destination=target.href;
  if(reduced.matches){location.assign(destination);return;}
  navigating=true;
  const home=['/','/index.html'].includes(new URL(destination,location.href).pathname);
