@@ -1,12 +1,12 @@
-import {createSaveQueue} from '../shared/save-queue.js?v=71eeb6f26f90';
-import {querySubmissions} from '../shared/submission-query.js?v=71eeb6f26f90';
-import {listVenues,saveVenue} from '../shared/venues.js?v=71eeb6f26f90';
-import {exportPoemPDF} from '../shared/poem-pdf.js?v=71eeb6f26f90';
-import {analyzePoem} from '../shared/prosody.js?v=71eeb6f26f90';
-import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=71eeb6f26f90';
-import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=71eeb6f26f90';
-import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=71eeb6f26f90';
-import {readingOrder} from './order.js?v=71eeb6f26f90';
+import {createSaveQueue} from '../shared/save-queue.js?v=59d803ba5f55';
+import {querySubmissions} from '../shared/submission-query.js?v=59d803ba5f55';
+import {listVenues,saveVenue} from '../shared/venues.js?v=59d803ba5f55';
+import {exportPoemPDF} from '../shared/poem-pdf.js?v=59d803ba5f55';
+import {analyzePoem} from '../shared/prosody.js?v=59d803ba5f55';
+import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=59d803ba5f55';
+import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=59d803ba5f55';
+import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=59d803ba5f55';
+import {readingOrder} from './order.js?v=59d803ba5f55';
 let venues=[],venueReady=false;const tableQueries=new Map();
 let readerFlight=null,readerLoaded=false,studioFlight=null;
 let backendReady=false,active,permissions={editPoems:false,manageSubmissions:false,comment:false},commentRequest=0,commentAnchor='';
@@ -56,7 +56,7 @@ function persist(immediate=true){
  if(!backendReady){$('save-state').textContent='Studio offline — export a copy';return Promise.resolve(false);}
  return draftSaves.save({immediate});
 }
-function list(){const root=$('draft-list');root.replaceChildren();for(const draft of drafts){const button=document.createElement('button');button.textContent=draft.title||'Untitled';button.setAttribute('aria-current',String(draft.id===active));button.onclick=()=>openDraft(draft.id);root.append(button);}}
+function list(){const root=$('draft-list'),scroll=root.scrollTop;root.replaceChildren();for(const draft of drafts){const button=document.createElement('button');button.textContent=draft.title||'Untitled';button.setAttribute('aria-current',String(draft.id===active));button.onclick=()=>openDraft(draft.id);root.append(button);}root.scrollTop=scroll;}
 function openDraft(id){if(!drafts.length&&!permissions.editPoems)return;if(!drafts.length){drafts.push({id:crypto.randomUUID(),title:'',body:'',versions:[]});persist();}const draft=drafts.find(d=>d.id===id)||drafts[0];active=draft.id;$('draft-title').value=draft.title;$('draft-body').value=draft.body;list();history();renderDraftSubmissions();syncShape();$('analysis-result').replaceChildren();commentAnchor='';$('comment-selection').textContent='';$('comment-body').value='';renderComments();applyPermissions();}
 function save(event){if(!permissions.editPoems)return;const draft=drafts.find(d=>d.id===active);if(!draft)return;draft.title=$('draft-title').value;draft.body=$('draft-body').value;if($('analysis-result').textContent)$('analysis-result').textContent='Poem changed. Analyze again to update estimates.';sizeEditor();persist(false);if(!event||event.target===$('draft-title'))list();}
 $('draft-title').addEventListener('input',save);$('draft-body').addEventListener('input',save);
