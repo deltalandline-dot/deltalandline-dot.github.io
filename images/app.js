@@ -1,6 +1,9 @@
-import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut,listCollection,setPhotoFeatured,removePhoto} from '../shared/connection.js?v=5575cdb806b0';
-import {DISPLAY_MS,choosePhoto,frameSize,photoPosition} from './gallery.js?v=5575cdb806b0';
+import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut,listCollection,setPhotoFeatured,removePhoto} from '../shared/connection.js?v=71eeb6f26f90';
+import {DISPLAY_MS,choosePhoto,frameSize,photoPosition} from './gallery.js?v=71eeb6f26f90';
 const $=id=>document.getElementById(id);let photos=[],current=0,timer=null,showing=null,generation=0,previewUrl=null,galleryRequest=0,selectionGeneration=0,uploading=false,uploadQueue=[],collectionRequest=0;
+const seenPhotos=new Set();
+try{const saved=JSON.parse(sessionStorage.getItem('gallery-seen')||'[]');if(Array.isArray(saved))for(const id of saved)if(typeof id==='string')seenPhotos.add(id);}catch{}
+function rememberPhoto(id){if(seenPhotos.has(id)&&showing?.id!==id)seenPhotos.clear();seenPhotos.add(id);const active=new Set(photos.map(photo=>photo.id));for(const old of seenPhotos)if(!active.has(old))seenPhotos.delete(old);try{sessionStorage.setItem('gallery-seen',JSON.stringify([...seenPhotos]));}catch{}}
 const inCollection=()=>['#upload','#collection'].includes(location.hash);
 $('menu-button').onclick=()=>{$('menu').hidden=!$('menu').hidden;$('menu-button').setAttribute('aria-expanded',String(!$('menu').hidden));};
 let previousSide=null,nextSide=null,nextPhoto=null,sideGeneration=0,animations=new Set();
@@ -15,7 +18,7 @@ function resize(){if(showing)place($('frame'),showing,'center');if(previousSide)
 async function prepareNext(){
  const token=++sideGeneration;removeSide(nextSide);nextSide=null;nextPhoto=null;
  if(photos.length<2||!showing)return;
- const item=photos[choosePhoto(photos,showing.id)],loaded=new Image();nextPhoto=item;loaded.src=item.url;
+ const item=photos[choosePhoto(photos,showing.id,Math.random,seenPhotos)],loaded=new Image();nextPhoto=item;loaded.src=item.url;
  try{await loaded.decode();}catch{return;}
  if(token!==sideGeneration||document.hidden||inCollection())return;
  nextSide=makeSide(item,'next');nextSide.element.style.opacity='1';
@@ -32,7 +35,7 @@ function schedule(){
   const request=galleryRequest,queuedId=nextPhoto?.id;
   try{const next=await listPhotos();if(request!==galleryRequest||document.hidden||inCollection())return;photos=next;}catch{}
   if(request!==galleryRequest||document.hidden||inCollection())return;
-  if(photos.length>1){const queued=photos.findIndex(item=>item.id===queuedId&&item.id!==showing?.id);show(queued>=0?queued:choosePhoto(photos,showing?.id));}
+  if(photos.length>1){const queued=photos.findIndex(item=>item.id===queuedId&&item.id!==showing?.id);show(queued>=0?queued:choosePhoto(photos,showing?.id,Math.random,seenPhotos));}
   else if(photos.length===1&&photos[0].id!==showing?.id)show(0);else{if(!photos.length)showEmptyGallery();schedule();}
  },DISPLAY_MS);
 }
@@ -44,7 +47,7 @@ async function show(index){
  const changed=showing&&showing.id!==item.id,oldItem=showing,oldBox=oldItem&&position(oldItem),incomingBox=oldItem&&position(item,'next',oldItem);
  clearMotion();
  if(changed)previousSide=makeSide(oldItem,'previous');
- current=index;showing=item;$('photo').src=loaded.src;$('photo').alt=item.description||'Photograph';resize();$('frame').hidden=false;$('empty').hidden=true;
+ rememberPhoto(item.id);current=index;showing=item;$('photo').src=loaded.src;$('photo').alt=item.description||'Photograph';resize();$('frame').hidden=false;$('empty').hidden=true;
  if(changed&&!reducedMotion()){
   const options={duration:1600,easing:'cubic-bezier(.22,.61,.36,1)'},center=position(item),distance=incomingBox.left-center.left;
   animate(previousSide.element,[{transform:`translateX(${oldBox.left-position(oldItem,'previous').left}px)`},{transform:'translateX(0)'}],options);
@@ -54,9 +57,9 @@ async function show(index){
  }
  schedule();
 }
-async function loadGallery(){const request=++galleryRequest;if(!showing){$('empty').textContent='Loading photographs…';$('empty').hidden=false;}try{const next=await listPhotos();if(request!==galleryRequest)return;photos=next;if(photos.length){const retained=photos.findIndex(p=>p.id===showing?.id);await show(retained>=0?retained:choosePhoto(photos,null));}else{showEmptyGallery();schedule();}}catch{if(request===galleryRequest){$('empty').textContent='The gallery couldn’t be loaded. Please try again.';schedule();}}}
+async function loadGallery(){const request=++galleryRequest;if(!showing){$('empty').textContent='Loading photographs…';$('empty').hidden=false;}try{const next=await listPhotos();if(request!==galleryRequest)return;photos=next;if(photos.length){const retained=photos.findIndex(p=>p.id===showing?.id);await show(retained>=0?retained:choosePhoto(photos,null,Math.random,seenPhotos));}else{showEmptyGallery();schedule();}}catch{if(request===galleryRequest){$('empty').textContent='The gallery couldn’t be loaded. Please try again.';schedule();}}}
 async function route(){galleryRequest++;generation++;collectionRequest++;const upload=inCollection();$('upload').hidden=!upload;$('gallery').hidden=upload;$('menu').hidden=true;$('menu-button').setAttribute('aria-expanded','false');clearTimeout(timer);clearMotion();if(!upload)await loadGallery();else if(await showLogin())await loadCollection();}
-function resumeGallery(){if(inCollection()||document.hidden)return;if(showing)schedule();else if(photos.length)show(choosePhoto(photos,null));else loadGallery();}
+function resumeGallery(){if(inCollection()||document.hidden)return;if(showing)schedule();else if(photos.length)show(choosePhoto(photos,null,Math.random,seenPhotos));else loadGallery();}
 addEventListener('pagehide',()=>{clearTimeout(timer);clearMotion();galleryRequest++;generation++;collectionRequest++;});addEventListener('pageshow',event=>{if(event.persisted)resumeGallery();});
 addEventListener('hashchange',route);addEventListener('resize',resize);document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(timer);clearMotion();generation++;galleryRequest++;}else resumeGallery();});
 function renderUploadQueue(){
