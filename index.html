@@ -20,13 +20,13 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 
 /* Keep the five equal rows in a centered 2:3 box. Individual layers preserve
    difference blending against the photograph and true red on hover. */
-.navigation{display:contents;--menu-width:min(220px,60vw,46.6666667vh);--menu-row:calc(var(--menu-width)*.3)}
-.navigation button{position:fixed;z-index:5;left:50%;top:50%;transform:translate(-50%,calc(-50% + (var(--row) - 2)*var(--menu-row)*var(--menu-scale,1))) scale(var(--menu-scale,1));width:var(--menu-width);height:var(--menu-row);text-align:justify;text-align-last:justify;text-justify:inter-character;pointer-events:auto;display:flex;align-items:center;justify-content:space-between;background:transparent;border:0;color:#fff;mix-blend-mode:difference;font:600 calc(var(--menu-width)*.1363636364)/1.12 'Switzer',sans-serif;letter-spacing:0;padding:0 12px;cursor:pointer}
+.navigation{display:contents;--menu-width:min(176px,36vw,28vh);--menu-row:calc(var(--menu-width)*.3)}
+.navigation button{position:fixed;z-index:5;left:50%;top:50%;transform:translate(-50%,calc(-50% + (var(--row) - 2)*var(--menu-row)*var(--menu-scale,1))) scale(var(--menu-scale,1));width:var(--menu-width);height:var(--menu-row);text-align:justify;text-align-last:justify;text-justify:inter-character;pointer-events:auto;display:flex;align-items:center;justify-content:space-between;background:transparent;border:0;color:#fff;mix-blend-mode:difference;font:450 calc(var(--menu-width)*.125)/1.12 'Switzer',sans-serif;letter-spacing:0;padding:0 12px;cursor:pointer}
 .navigation button:hover,.navigation button:focus-visible{color:var(--red);mix-blend-mode:normal}
 .navigation button:focus-visible{outline:1px solid currentColor;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){.scroll-range{height:180svh}}
 </style>
-<script type="module" blocking="render" src="./shared/transitions.js?v=f8ce8c71522b"></script></head>
+<script type="module" blocking="render" src="./shared/transitions.js?v=5cd7cc2bcefb"></script></head>
 <body>
 <main class="journey" id="journey">
 <nav class="navigation" aria-label="Portfolio categories">
@@ -56,7 +56,7 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 </svg></div>
 </div><div class="scroll-range" aria-hidden="true"></div></main>
 <script type="module">
-import {zoomState} from './shared/zoom.js?v=f8ce8c71522b';
+import {zoomState} from './shared/zoom.js?v=5cd7cc2bcefb';
 const world=document.getElementById('world'),landscape=document.getElementById('landscape'),journey=document.getElementById('journey');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');const clamp=x=>Math.max(0,Math.min(1,x));const ease=x=>x*x*(3-2*x);let scheduled=false;
 const mask=document.querySelector('#mirror path'),portrait=document.getElementById('portrait');

@@ -1,10 +1,10 @@
-import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=f8ce8c71522b';
-import {publishedPoems,loadStudio,saveCollection} from '../shared/poetry-store.js?v=f8ce8c71522b';
-import {readingOrder} from './order.js?v=f8ce8c71522b';
+import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=5cd7cc2bcefb';
+import {publishedPoems,loadStudio,saveCollection} from '../shared/poetry-store.js?v=5cd7cc2bcefb';
+import {readingOrder} from './order.js?v=5cd7cc2bcefb';
 let backendReady=false,active;
 const $=id=>document.getElementById(id),motion=matchMedia('(prefers-reduced-motion: reduce)');
 const menu=$('studio-menu');$('studio-toggle').onclick=()=>{menu.hidden=!menu.hidden;$('studio-toggle').setAttribute('aria-expanded',String(!menu.hidden));};
-function route(){const view=['write','review'].includes(location.hash.slice(1))?location.hash.slice(1):'read';for(const name of ['read','write','review'])$(name+'-view').hidden=name!==view;$('section-name').textContent=view.toUpperCase();menu.hidden=true;$('studio-toggle').setAttribute('aria-expanded','false');$('studio-auth').hidden=view==='read'||backendReady||!configured; if(view==='write'&&backendReady)openDraft(active);if(view==='review'&&backendReady)renderReview();for(const el of document.querySelectorAll('#write-view input,#write-view textarea,#write-view button,#review-view input,#review-view select,#review-view button'))el.disabled=!backendReady;}
+function route(){const view=['write','review'].includes(location.hash.slice(1))?location.hash.slice(1):'read';for(const name of ['read','write','review'])$(name+'-view').hidden=name!==view;$('section-name').textContent=view==='read'?'':view.toUpperCase();menu.hidden=true;$('studio-toggle').setAttribute('aria-expanded','false');$('studio-auth').hidden=view==='read'||backendReady||!configured; if(view==='write'&&backendReady)openDraft(active);if(view==='review'&&backendReady)renderReview();for(const el of document.querySelectorAll('#write-view input,#write-view textarea,#write-view button,#review-view input,#review-view select,#review-view button'))el.disabled=!backendReady;}
 addEventListener('hashchange',route);addEventListener('keydown',e=>{if(e.key==='Escape'){menu.hidden=true;$('studio-toggle').setAttribute('aria-expanded','false');}});
 let index=0,count=0;const pages=$('pages');
 function controls(){index=Math.round(pages.scrollLeft/Math.max(1,pages.clientWidth));$('previous').disabled=index<=0;$('next').disabled=index>=count-1;$('position').textContent=count?`${index+1} / ${count}`:'';}

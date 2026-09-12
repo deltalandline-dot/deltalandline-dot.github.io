@@ -1,4 +1,4 @@
-export const DISPLAY_MS=30_000;
+export const DISPLAY_MS=20_000;
 export function nextIndex(current,count){return count>1?(current+1)%count:0;}
 export function choosePhoto(photos,currentId,random=Math.random){
  if(!photos.length)return -1;

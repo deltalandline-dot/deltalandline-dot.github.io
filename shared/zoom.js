@@ -2,8 +2,8 @@ export const MIRROR={x:1517,y:837.5,width:538,height:749};
 const clamp=x=>Math.max(0,Math.min(1,x));
 const ease=x=>x*x*(3-2*x);
 export function menuDimensions(viewportWidth,viewportHeight){
- const width=Math.min(220,viewportWidth*.6,viewportHeight*.7*2/3);
- return {width,height:width*1.5,font:width*30/220};
+ const width=Math.min(176,viewportWidth*.36,viewportHeight*.28);
+ return {width,height:width*1.5,font:width*.125};
 }
 export function zoomState(progress,width,height,mirrorFit,reduced=false){
  const p=clamp(progress),first=ease(clamp(p/.45)),second=reduced?1:ease(clamp((p-.45)/.55));
