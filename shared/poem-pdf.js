@@ -1,4 +1,4 @@
-import { normalizeLayout, renderPoem } from './poem-format.js?v=3163301f6ef2';
+import { normalizeLayout, renderPoem } from './poem-format.js?v=a8d72114f8c7';
 
 export const PRINT_CSS = `
 @page { margin: 12.7mm; }

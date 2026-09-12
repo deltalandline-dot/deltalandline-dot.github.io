@@ -1,9 +1,12 @@
-import {exportPoemPDF} from '../shared/poem-pdf.js?v=3163301f6ef2';
-import {analyzePoem} from '../shared/prosody.js?v=3163301f6ef2';
-import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=3163301f6ef2';
-import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=3163301f6ef2';
-import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=3163301f6ef2';
-import {readingOrder} from './order.js?v=3163301f6ef2';
+import {querySubmissions} from '../shared/submission-query.js?v=a8d72114f8c7';
+import {listVenues,saveVenue} from '../shared/venues.js?v=a8d72114f8c7';
+import {exportPoemPDF} from '../shared/poem-pdf.js?v=a8d72114f8c7';
+import {analyzePoem} from '../shared/prosody.js?v=a8d72114f8c7';
+import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=a8d72114f8c7';
+import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=a8d72114f8c7';
+import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=a8d72114f8c7';
+import {readingOrder} from './order.js?v=a8d72114f8c7';
+let venues=[],venueReady=false;const tableQueries=new Map();
 let backendReady=false,active,permissions={editPoems:false,manageSubmissions:false,comment:false},commentRequest=0,commentAnchor='';
 const $=id=>document.getElementById(id),motion=matchMedia('(prefers-reduced-motion: reduce)');
 const menu=$('studio-menu');$('studio-toggle').onclick=()=>{menu.hidden=!menu.hidden;$('studio-toggle').setAttribute('aria-expanded',String(!menu.hidden));};
@@ -28,13 +31,17 @@ function persist(){
 }
 function list(){const root=$('draft-list');root.replaceChildren();for(const draft of drafts){const button=document.createElement('button');button.textContent=draft.title||'Untitled';button.setAttribute('aria-current',String(draft.id===active));button.onclick=()=>openDraft(draft.id);root.append(button);}}
 function openDraft(id){if(!drafts.length&&!permissions.editPoems)return;if(!drafts.length){drafts.push({id:crypto.randomUUID(),title:'',body:'',versions:[]});persist();}const draft=drafts.find(d=>d.id===id)||drafts[0];active=draft.id;$('draft-title').value=draft.title;$('draft-body').value=draft.body;list();history();renderDraftSubmissions();syncShape();$('analysis-result').replaceChildren();commentAnchor='';$('comment-selection').textContent='';$('comment-body').value='';renderComments();applyPermissions();}
-function save(){if(!permissions.editPoems)return;const draft=drafts.find(d=>d.id===active);if(!draft)return;draft.title=$('draft-title').value;draft.body=$('draft-body').value;if($('analysis-result').textContent)$('analysis-result').textContent='Poem changed. Analyze again to update estimates.';renderPoem($('draft-preview'),draft.body,draft.layout);persist();list();}
+function save(){if(!permissions.editPoems)return;const draft=drafts.find(d=>d.id===active);if(!draft)return;draft.title=$('draft-title').value;draft.body=$('draft-body').value;if($('analysis-result').textContent)$('analysis-result').textContent='Poem changed. Analyze again to update estimates.';sizeEditor();persist();list();}
 $('draft-title').addEventListener('input',save);$('draft-body').addEventListener('input',save);
-function syncShape(){const draft=drafts.find(d=>d.id===active);if(!draft)return;const layout=normalizeLayout(draft.layout);for(const key of ['alignment','fontSize','measure','lineSpacing','stanzaSpacing'])$('shape-'+key).value=layout[key];applyPoemLayout($('draft-body'),layout);renderPoem($('draft-preview'),draft.body,layout);}
-for(const key of ['alignment','fontSize','measure','lineSpacing','stanzaSpacing'])$('shape-'+key).onchange=()=>{const draft=drafts.find(d=>d.id===active);if(!draft||!backendReady||!permissions.editPoems)return;draft.layout=normalizeLayout({...normalizeLayout(draft.layout),[key]:key==='alignment'?$('shape-'+key).value:Number($('shape-'+key).value)});syncShape();persist();};
+function sizeEditor(){const editor=$('draft-body');if(!editor||$('write-view').hidden)return;const y=scrollY;editor.style.height='0px';editor.style.height=Math.max(180,editor.scrollHeight+2)+'px';if(scrollY!==y)scrollTo({top:y,behavior:'instant'});}
+let editorWidth=0;new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width!==editorWidth){editorWidth=width;sizeEditor();}}).observe($('draft-body'));
+let leaveEditorOnTab=false;
+document.fonts?.ready.then(sizeEditor);
+function syncShape(){const draft=drafts.find(d=>d.id===active);if(!draft)return;const layout=normalizeLayout(draft.layout);for(const key of ['alignment','fontSize','measure','lineSpacing'])$('shape-'+key).value=layout[key];applyPoemLayout($('draft-body'),layout);sizeEditor();}
+for(const key of ['alignment','fontSize','measure','lineSpacing'])$('shape-'+key).onchange=()=>{const draft=drafts.find(d=>d.id===active);if(!draft||!backendReady||!permissions.editPoems)return;draft.layout=normalizeLayout({...normalizeLayout(draft.layout),[key]:key==='alignment'?$('shape-'+key).value:Number($('shape-'+key).value)});syncShape();persist();};
 function shape(action){if(!backendReady||!permissions.editPoems)return;const editor=$('draft-body'),result=formatSelection(editor.value,editor.selectionStart,editor.selectionEnd,action);editor.value=result.text;editor.focus();editor.setSelectionRange(result.start,result.end);save();}
 for(const button of document.querySelectorAll('[data-shape]'))button.onclick=()=>shape(button.dataset.shape);
-$('draft-body').addEventListener('keydown',event=>{if(event.isComposing)return;let action;if((event.metaKey||event.ctrlKey)&&event.key===']')action='indent';if((event.metaKey||event.ctrlKey)&&event.key==='[')action='outdent';if((event.metaKey||event.ctrlKey)&&event.altKey&&event.key==='ArrowUp')action='up';if((event.metaKey||event.ctrlKey)&&event.altKey&&event.key==='ArrowDown')action='down';if(action){event.preventDefault();shape(action);}});
+$('draft-body').addEventListener('keydown',event=>{if(event.isComposing)return;if(event.key==='Escape'){leaveEditorOnTab=true;return;}if(event.key==='Tab'&&leaveEditorOnTab){leaveEditorOnTab=false;return;}leaveEditorOnTab=false;if(event.key==='Tab'&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&permissions.editPoems){event.preventDefault();const editor=$('draft-body');if(event.shiftKey){shape('outdent');}else if(editor.value.slice(editor.selectionStart,editor.selectionEnd).includes('\n')){shape('indent');}else{editor.setRangeText('\t',editor.selectionStart,editor.selectionEnd,'end');save();}return;}let action;if((event.metaKey||event.ctrlKey)&&event.key===']')action='indent';if((event.metaKey||event.ctrlKey)&&event.key==='[')action='outdent';if((event.metaKey||event.ctrlKey)&&event.altKey&&event.key==='ArrowUp')action='up';if((event.metaKey||event.ctrlKey)&&event.altKey&&event.key==='ArrowDown')action='down';if(action){event.preventDefault();shape(action);}});
 $('analyze-poem').onclick=()=>{const result=analyzePoem($('draft-body').value),root=$('analysis-result');root.replaceChildren();const note=document.createElement('p');note.className='note';note.textContent=result.note;root.append(note);const table=document.createElement('table');table.className='analysis-table';const header=document.createElement('tr');for(const label of ['Line','Syllables ≈','Stress ≈','End word','Rhyme candidate']){const th=document.createElement('th');th.scope='col';th.textContent=label;header.append(th);}table.append(header);for(const line of result.lines){if(!line.syllables)continue;const row=document.createElement('tr');for(const value of [line.line,line.syllables,line.stress,line.endWord,line.rhyme||'—']){const cell=document.createElement('td');cell.textContent=String(value);row.append(cell);}table.append(row);}root.append(table);};
 $('new-draft').onclick=()=>{if(!permissions.editPoems)return;const draft={id:crypto.randomUUID(),title:'',body:'',versions:[]};drafts.unshift(draft);persist();openDraft(draft.id);$('draft-body').focus();};
 $('keep-draft').onclick=()=>{if(!permissions.editPoems)return;save();const draft=drafts.find(d=>d.id===active);draft.versions.unshift({date:new Date().toISOString(),title:draft.title,body:draft.body,layout:structuredClone(draft.layout||{})});persist();history();};
@@ -52,16 +59,35 @@ function renderReview(){
 }
 function renderDraftSubmissions(){renderSubmissionTable($('draft-submissions'),submissions.filter(record=>record.poemId===active));}
 function renderSubmissionTable(records,items){
- records.replaceChildren();if(!items.length){records.textContent='No submissions recorded.';return;}
- const table=document.createElement('table'),head=document.createElement('thead'),header=document.createElement('tr'),body=document.createElement('tbody');table.className='submission-table';table.setAttribute('aria-label','Submissions');for(const label of ['Piece','Venue','Sent','Status','Response','Notes']){const cell=document.createElement('th');cell.scope='col';cell.textContent=label;header.append(cell);}head.append(header);for(const record of items){const row=submissionRow(record);body.append(row,row.notesRow);}table.append(head,body);records.append(table);
+ records.replaceChildren();
+ const state=tableQueries.get(records.id)||{filters:{},sortKey:'',direction:'asc'};tableQueries.set(records.id,state);
+ const columns=[['piece','Piece'],['venue','Venue'],['sent','Sent'],['submitBy','Submit by'],['status','Status'],['response','Response'],['notes','Notes']];
+ const table=document.createElement('table'),head=document.createElement('thead'),header=document.createElement('tr'),filters=document.createElement('tr'),body=document.createElement('tbody');table.className='submission-table';table.setAttribute('aria-label','Submissions');
+ const renderRows=()=>{body.replaceChildren();const selected=querySubmissions(items,drafts,state);for(const record of selected){const row=submissionRow(record);body.append(row,row.notesRow);}if(!selected.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=7;cell.textContent=items.length?'No matching submissions.':'No submissions recorded.';row.append(cell);body.append(row);}};
+ for(const [key,label] of columns){
+  const cell=document.createElement('th'),button=document.createElement('button'),filterCell=document.createElement('th'),input=document.createElement('input');cell.scope='col';button.type='button';button.textContent=label;button.setAttribute('aria-label','Sort by '+label);cell.setAttribute('aria-sort',state.sortKey===key?(state.direction==='asc'?'ascending':'descending'):'none');
+  button.onclick=()=>{state.direction=state.sortKey===key&&state.direction==='asc'?'desc':'asc';state.sortKey=key;for(const th of header.children)th.setAttribute('aria-sort','none');cell.setAttribute('aria-sort',state.direction==='asc'?'ascending':'descending');renderRows();};
+  input.type='search';input.placeholder='Filter';input.value=state.filters[key]||'';input.setAttribute('aria-label','Filter '+label);input.oninput=()=>{state.filters[key]=input.value;renderRows();};cell.append(button);filterCell.append(input);header.append(cell);filters.append(filterCell);
+ }
+ head.append(header,filters);table.append(head,body);records.append(table);renderRows();
 }
 function submissionRow(record){
  const row=document.createElement('tr'),title=document.createElement('td'),status=document.createElement('select'),response=document.createElement('input'),notes=document.createElement('textarea');
  row.className='submission-record';
- const notesRow=document.createElement('tr'),notesBody=document.createElement('td');notesRow.className='submission-notes-row';notesRow.hidden=true;notesBody.colSpan=6;notesRow.append(notesBody);row.notesRow=notesRow;
+ const notesRow=document.createElement('tr'),notesBody=document.createElement('td');notesRow.className='submission-notes-row';notesRow.hidden=true;notesBody.colSpan=7;notesRow.append(notesBody);row.notesRow=notesRow;
  notesRow.id='submission-notes-'+(submissionRow.nextId=(submissionRow.nextId||0)+1);
  const piece=drafts.find(d=>d.id===record.poemId)?.title||record.pieceTitle||'Piece not specified';
- const linked=drafts.find(d=>d.id===record.poemId);if(linked){const link=document.createElement('button');link.type='button';link.className='poem-link';link.textContent=piece;link.onclick=()=>{active=linked.id;location.hash='write';};title.append(link);}else title.textContent=piece;const venue=document.createElement('td'),sent=document.createElement('td'),statusCell=document.createElement('td'),responseCell=document.createElement('td'),notesCell=document.createElement('td'),notesDetails=document.createElement('details'),notesSummary=document.createElement('summary');venue.textContent=record.magazine||'Venue not specified';sent.textContent=record.sent||'—';if(!record.sent)sent.title='Date not recorded';notesSummary.textContent=record.notes?'Notes •':'Notes';notesDetails.append(notesSummary);notesSummary.setAttribute('aria-controls',notesRow.id);notesSummary.setAttribute('aria-expanded','false');notesDetails.ontoggle=()=>{notesRow.hidden=!notesDetails.open;notesSummary.setAttribute('aria-expanded',String(notesDetails.open));};
+ const linked=drafts.find(d=>d.id===record.poemId),pieceSelect=document.createElement('select'),open=document.createElement('button');
+ pieceSelect.setAttribute('aria-label','Submitted piece');
+ const unknown=document.createElement('option');unknown.value='';unknown.textContent=linked?'Unlinked piece':piece;pieceSelect.append(unknown);
+ for(const draft of drafts){const option=document.createElement('option');option.value=draft.id;option.textContent=draft.title||'Untitled';pieceSelect.append(option);}pieceSelect.value=linked?.id||'';
+ open.type='button';open.className='poem-link';open.textContent='↗';open.setAttribute('aria-label','Open submitted poem');open.hidden=!linked;open.onclick=()=>{if(!record.poemId)return;active=record.poemId;if(location.hash==='#write')openDraft(active);else location.hash='write';};
+ pieceSelect.onchange=()=>{if(!permissions.manageSubmissions)return;const selected=drafts.find(d=>d.id===pieceSelect.value);record.poemId=selected?.id||null;record.pieceTitle=selected?.title||record.pieceTitle||piece;open.hidden=!selected;Promise.resolve(saveSubmissions()).then(()=>{if(location.hash==='#write')renderDraftSubmissions();});};title.append(pieceSelect,open);
+ const venue=document.createElement('td'),sent=document.createElement('td'),deadline=document.createElement('td'),statusCell=document.createElement('td'),responseCell=document.createElement('td'),notesCell=document.createElement('td'),notesDetails=document.createElement('details'),notesSummary=document.createElement('summary'),venueInput=document.createElement('input'),sentInput=document.createElement('input'),deadlineInput=document.createElement('input');
+ venueInput.value=record.magazine||'';venueInput.setAttribute('aria-label','Submission venue');venueInput.setAttribute('list','venue-options');venueInput.placeholder='Venue';venueInput.onchange=()=>{if(!permissions.manageSubmissions)return;record.magazine=venueInput.value.trim();saveSubmissions();rememberVenue(record.magazine);};
+ sentInput.type='date';sentInput.value=record.sent||'';sentInput.setAttribute('aria-label','Date sent');sentInput.onchange=()=>{if(!permissions.manageSubmissions)return;record.sent=sentInput.value;saveSubmissions();};venue.append(venueInput);sent.append(sentInput);
+ deadlineInput.type='date';deadlineInput.value=record.submitBy||'';deadlineInput.setAttribute('aria-label','Submit by');deadlineInput.onchange=()=>{if(!permissions.manageSubmissions)return;record.submitBy=deadlineInput.value;saveSubmissions();};deadline.append(deadlineInput);
+ notesSummary.textContent=record.notes?'Notes •':'Notes';notesDetails.append(notesSummary);notesSummary.setAttribute('aria-controls',notesRow.id);notesSummary.setAttribute('aria-expanded','false');notesDetails.ontoggle=()=>{notesRow.hidden=!notesDetails.open;notesSummary.setAttribute('aria-expanded',String(notesDetails.open));};
  const statuses=['planned','on hold','submitted','accepted','rejected','withdrawn','closed'];
  // Keep unfamiliar imported values visible without assigning an outcome.
  if(!statuses.includes(record.status)){const option=document.createElement('option');option.value=record.status||'';option.textContent=record.status||'Status not recorded';status.append(option);}
@@ -70,7 +96,7 @@ function submissionRow(record){
  response.type='date';response.value=record.response||'';response.setAttribute('aria-label','Response date');
  notes.value=record.notes||'';notes.placeholder='Notes';notes.setAttribute('aria-label','Submission notes');
  status.onchange=()=>{record.status=status.value;saveSubmissions();};response.onchange=()=>{record.response=response.value;saveSubmissions();};notes.onchange=()=>{record.notes=notes.value;notesSummary.textContent=record.notes?'Notes •':'Notes';saveSubmissions();};
- statusCell.append(status);responseCell.append(response);notesBody.append(notes);notesCell.append(notesDetails);row.append(title,venue,sent,statusCell,responseCell,notesCell);
+ statusCell.append(status);responseCell.append(response);notesBody.append(notes);notesCell.append(notesDetails);row.append(title,venue,sent,deadline,statusCell,responseCell,notesCell);
  const fields=[['Submitted by',record.submittedBy],['Format',record.format],['Submission address',record.submitUrl],['Paid (source)',record.paid],['Status (source)',record.sourceStatus],['Accepted (source)',record.sourceAccepted],['Sheet row',record.sourceRow],['Source sheet',record.sourceSheet]];
  const present=fields.filter(([,value])=>value!==undefined&&value!==null&&String(value).trim()!=='');
  if(present.length){
@@ -78,14 +104,14 @@ function submissionRow(record){
   for(const [label,value] of present){const item=document.createElement('p');item.textContent=label+': '+String(value);details.append(item);}
   notesBody.append(details);
  }
- for(const control of [status,response,notes])control.disabled=!backendReady||!permissions.manageSubmissions;
+ for(const control of [pieceSelect,venueInput,sentInput,deadlineInput,status,response,notes])control.disabled=!backendReady||!permissions.manageSubmissions;
  return row;
 
 }
 let submissionQueue=Promise.resolve();
 function submissionSaveState(message){$('review-state').textContent=message;$('draft-submission-state').textContent=message;}
 function saveSubmissions(){if(!permissions.manageSubmissions)return Promise.resolve();const snapshot=JSON.parse(JSON.stringify(submissions));submissionSaveState('Saving…');return submissionQueue=submissionQueue.catch(()=>{}).then(async()=>{revisions.submissions=await saveCollection('submissions',snapshot,revisions.submissions);submissionSaveState(configured?'Saved to your online studio':'Saved on this Mac');}).catch(error=>{submissionSaveState(error.message);});}
-$('submission-form').onsubmit=async event=>{event.preventDefault();if(!backendReady||!permissions.manageSubmissions)return;submissions.push({id:crypto.randomUUID(),poemId:$('submission-poem').value,magazine:$('magazine').value.trim(),sent:$('sent').value,response:'',status:'submitted',notes:''});await saveSubmissions();$('magazine').value='';renderReview();};
+$('submission-form').onsubmit=async event=>{event.preventDefault();if(!backendReady||!permissions.manageSubmissions)return;submissions.push({id:crypto.randomUUID(),poemId:$('submission-poem').value,...submissionVenue(''),magazine:$('magazine').value.trim(),sent:$('sent').value,submitBy:$('submit-by').value,response:'',status:'submitted',notes:''});await saveSubmissions();await rememberVenue($('magazine').value,$('venue-url').value,$('venue-format').value);$('magazine').value='';$('submit-by').value='';$('venue-url').value='';$('venue-format').value='';renderReview();};
 $('studio-note').textContent=configured?'Your private online workspace. Choose what to publish in Review.':'Drafts are saved on this Mac. Keep versions as you work, then choose what to publish in Review.';
 $('studio-login-form').onsubmit=async e=>{e.preventDefault();$('studio-send').disabled=true;try{await signIn($('studio-email').value.trim(),new URL('./',location.href).href);$('studio-login-state').textContent='Open the sign-in email on this device.';}catch(error){$('studio-login-state').textContent=error.message;}finally{$('studio-send').disabled=false;}};
 $('studio-sign-out').hidden=!configured||!backendReady;$('studio-sign-out').onclick=()=>{signOut();location.reload();};
@@ -101,7 +127,7 @@ function applyPermissions(){
  if(backendReady&&!canEdit)$('studio-note').textContent='Editorial access: read poems, leave comments, and manage submissions. Poem text and publication choices are read-only.';
 }
 $('export-pdf').onclick=async()=>{const draft=drafts.find(d=>d.id===active);if(!draft)return;try{await exportPoemPDF({...draft,publications:[...new Set(submissions.filter(s=>s.poemId===active&&s.status==='accepted').map(s=>s.magazine).filter(Boolean))]});}catch(error){$('save-state').textContent=error.message;}};
-$('draft-submission-form').onsubmit=async event=>{event.preventDefault();if(!backendReady||!permissions.manageSubmissions||!active)return;submissions.push({id:crypto.randomUUID(),poemId:active,magazine:$('draft-magazine').value.trim(),sent:$('draft-sent').value,response:'',status:'submitted',notes:''});await saveSubmissions();$('draft-magazine').value='';renderDraftSubmissions();};
+$('draft-submission-form').onsubmit=async event=>{event.preventDefault();if(!backendReady||!permissions.manageSubmissions||!active)return;submissions.push({id:crypto.randomUUID(),poemId:active,...submissionVenue('draft-'),magazine:$('draft-magazine').value.trim(),sent:$('draft-sent').value,submitBy:$('draft-submit-by').value,response:'',status:'submitted',notes:''});await saveSubmissions();await rememberVenue($('draft-magazine').value,$('draft-venue-url').value,$('draft-venue-format').value);$('draft-magazine').value='';$('draft-submit-by').value='';$('draft-venue-url').value='';$('draft-venue-format').value='';renderDraftSubmissions();};
 $('comment-anchor').onclick=()=>{const editor=$('draft-body');commentAnchor=editor.value.slice(editor.selectionStart,editor.selectionEnd).slice(0,300);$('comment-selection').textContent=commentAnchor?'Selected: '+commentAnchor:'No words selected — this will be a general comment.';};
 async function renderComments(){
  const request=++commentRequest,poemId=active,root=$('comments-list');root.replaceChildren();
@@ -115,3 +141,20 @@ async function renderComments(){
 $('comment-form').onsubmit=async event=>{event.preventDefault();if(!permissions.comment||!active)return;const poemId=active,body=$('comment-body').value.trim();if(!body)return;const submit=$('comment-form').querySelector('[type=submit]');submit.disabled=true;
  try{await addPoemComment(poemId,body,commentAnchor);if(active===poemId){$('comment-body').value='';commentAnchor='';$('comment-selection').textContent='';await renderComments();}}catch(error){$('comment-state').textContent=error.message;}finally{submit.disabled=false;}
 };
+
+function submissionVenue(prefix){return {submitUrl:$(prefix+'venue-url').value.trim(),format:$(prefix+'venue-format').value.trim()};}
+function venueMatch(name){return venues.find(v=>v.name.trim().toLocaleLowerCase()===name.trim().toLocaleLowerCase());}
+function renderVenues(){
+ const options=$('venue-options');options.replaceChildren();for(const venue of venues){const option=document.createElement('option');option.value=venue.name;options.append(option);}
+}
+async function rememberVenue(name,submission_url,format){
+ if(!configured||!permissions.manageSubmissions||!name.trim())return;
+ try{const saved=await saveVenue({name:name.trim(),...(submission_url===undefined?{}:{submission_url}),...(format===undefined?{}:{format})});venues=venues.filter(v=>v.id!==saved.id);venues.push(saved);venues.sort((a,b)=>a.name.localeCompare(b.name));renderVenues();}
+ catch(error){submissionSaveState('Venue directory: '+error.message);}
+}
+for(const prefix of ['', 'draft-']){
+ $(prefix+'magazine').setAttribute('list','venue-options');
+ $(prefix+'magazine').addEventListener('input',()=>{const match=venueMatch($(prefix+'magazine').value);if(match){$(prefix+'venue-url').value=match.submission_url||'';$(prefix+'venue-format').value=match.format||'';}});
+ $(prefix+'magazine').addEventListener('change',()=>{const match=venueMatch($(prefix+'magazine').value);$(prefix+'venue-url').value=match?.submission_url||'';$(prefix+'venue-format').value=match?.format||'';});
+}
+if(backendReady&&configured){try{venues=await listVenues();venueReady=true;renderVenues();}catch(error){submissionSaveState(error.message);}}

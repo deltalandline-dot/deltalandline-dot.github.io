@@ -10,8 +10,22 @@ html[data-theme="dark"] option{background:var(--paper);color:var(--ink)}
 html[data-theme="dark"] :is(.menu,.studio-menu,.upload-queue li,.history-item,.publication-row,.submission-record,.submission-table th,.submission-table td){border-color:#f5f4ef33}
 html[data-theme="dark"] .submission-table tbody tr:hover{background:#f5f4ef08}
 html[data-theme="dark"] .collection-card img{background:#f5f4ef08}
-html[data-theme] .theme-toggle{position:absolute;z-index:20;top:28px;right:80px;width:64px;height:40px;display:flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:0;background:var(--paper,#f5f4ef);color:var(--ink,#111110);font:11px/1 Switzer,Arial,sans-serif;letter-spacing:.12em;cursor:pointer;-webkit-tap-highlight-color:transparent}
+html[data-theme] .theme-toggle{position:fixed;z-index:21;top:28px;right:80px;width:64px;height:40px;display:flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:0;background:var(--paper,#f5f4ef);color:var(--ink,#111110);font:11px/1 Switzer,Arial,sans-serif;letter-spacing:.12em;cursor:pointer;-webkit-tap-highlight-color:transparent}
 html[data-theme] .theme-toggle:hover{color:var(--red,#ff3028)}
 html[data-theme] .theme-toggle:focus-visible{outline:2px solid var(--red,#ff3028);outline-offset:4px}
 @media(max-width:600px){html[data-theme] .theme-toggle{top:max(18px,env(safe-area-inset-top));right:calc(72px + env(safe-area-inset-right));width:64px;height:44px}}
 
+
+/* Keep section navigation in the viewport, independent of document scroll. */
+html[data-theme] body>header{position:fixed;top:0;left:0;right:0;width:100%;z-index:100;background:var(--paper,#f5f4ef);padding-top:calc(20px + env(safe-area-inset-top));height:calc(80px + env(safe-area-inset-top))}
+html[data-theme] body:has(#studio-toggle){--section-header-height:calc(96px + env(safe-area-inset-top));padding-top:var(--section-header-height)}
+html[data-theme] body:has(#studio-toggle)>header{height:var(--section-header-height);padding-top:calc(28px + env(safe-area-inset-top))}
+html[data-theme] body:has(#studio-toggle) .pages{height:calc(100svh - var(--section-header-height) - 70px)}
+html[data-theme] .theme-toggle{z-index:101;top:calc(28px + env(safe-area-inset-top))}
+html[data-theme] body:has(#menu-button) .theme-toggle{top:calc(20px + env(safe-area-inset-top))}
+@media(max-width:600px){
+ html[data-theme] body>header{padding-top:calc(16px + env(safe-area-inset-top))}
+ html[data-theme] body:has(#studio-toggle){--section-header-height:calc(80px + env(safe-area-inset-top))}
+ html[data-theme] body:has(#studio-toggle)>header{padding-top:calc(20px + env(safe-area-inset-top))}
+ html[data-theme] .theme-toggle,html[data-theme] body:has(#menu-button) .theme-toggle{top:calc(18px + env(safe-area-inset-top))}
+}
