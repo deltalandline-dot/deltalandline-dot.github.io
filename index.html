@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
-<head><meta name="referrer" content="no-referrer"><link rel="stylesheet" href="./shared/theme.css?v=310475587968"><script src="./shared/theme.js?v=310475587968"></script><style>html.site-arriving::after{content:'';position:fixed;inset:0;background:#f5f4ef;z-index:10002}html.site-arriving{background:#f5f4ef}</style><script>try{const a=JSON.parse(sessionStorage.getItem('site-arrival'));sessionStorage.removeItem('site-arrival');if(a&&a.path===location.pathname&&Date.now()-a.time<15000&&!matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.classList.add('site-arriving');setTimeout(()=>document.documentElement.classList.remove('site-arriving'),5000);}}catch{}</script>
-<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin><link rel="stylesheet" href="./shared/fonts.css?v=310475587968"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<head><meta name="referrer" content="no-referrer"><link rel="stylesheet" href="./shared/theme.css?v=11b231bd80db"><script src="./shared/theme.js?v=11b231bd80db"></script><style>html.site-arriving::after{content:'';position:fixed;inset:0;background:#f5f4ef;z-index:10002}html.site-arriving{background:#f5f4ef}</style><script>try{const a=JSON.parse(sessionStorage.getItem('site-arrival'));sessionStorage.removeItem('site-arrival');if(a&&a.path===location.pathname&&Date.now()-a.time<15000&&!matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.classList.add('site-arriving');setTimeout(()=>document.documentElement.classList.remove('site-arriving'),5000);}}catch{}</script>
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin><link rel="stylesheet" href="./shared/fonts.css?v=11b231bd80db"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>delta as in land lines</title>
 
 
@@ -21,12 +21,12 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 /* Keep the five equal rows in a centered 2:3 box. Individual layers preserve
    difference blending against the photograph and true red on hover. */
 .navigation{display:contents;--menu-width:min(176px,36vw,28vh);--menu-row:calc(var(--menu-width)*.3)}
-.navigation button{position:fixed;z-index:5;left:50%;top:50%;transform:translate(-50%,calc(-50% + (var(--row) - 2)*var(--menu-row)*var(--menu-scale,1))) scale(var(--menu-scale,1));width:var(--menu-width);height:var(--menu-row);text-align:justify;text-align-last:justify;text-justify:inter-character;pointer-events:auto;display:flex;align-items:center;justify-content:space-between;background:transparent;border:0;color:#fff;mix-blend-mode:difference;font:450 calc(var(--menu-width)*.125)/1.12 'Switzer',sans-serif;letter-spacing:0;padding:0 12px;cursor:pointer;-webkit-text-stroke:.35px #fff;paint-order:stroke fill}
+.navigation button{position:fixed;z-index:5;left:50%;top:50%;transform:translate(-50%,calc(-50% + (var(--row) - 2)*var(--menu-row)*var(--menu-scale,1))) scale(var(--menu-scale,1));width:var(--menu-width);height:var(--menu-row);text-align:justify;text-align-last:justify;text-justify:inter-character;pointer-events:auto;display:flex;align-items:center;justify-content:space-between;background:transparent;border:0;color:#fff;mix-blend-mode:normal;font:450 calc(var(--menu-width)*.125)/1.12 'Switzer',sans-serif;letter-spacing:0;padding:0 12px;cursor:pointer;-webkit-text-stroke:.35px #fff;paint-order:stroke fill;text-shadow:-1px -1px 0 #111,1px -1px 0 #111,-1px 1px 0 #111,1px 1px 0 #111,0 1px 3px #1119}
 .navigation button:hover,.navigation button:focus-visible{color:var(--red);mix-blend-mode:normal}
 .navigation button:focus-visible{outline:1px solid currentColor;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){.scroll-range{height:180svh}}
 </style>
-<script type="module" blocking="render" src="./shared/transitions.js?v=310475587968"></script></head>
+<script type="module" blocking="render" src="./shared/transitions.js?v=11b231bd80db"></script></head>
 <body>
 
 <div class="viewport">
@@ -57,7 +57,7 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 <button type="button" aria-label="MUSIC" style="--row:4"><span aria-hidden="true">M</span><span aria-hidden="true">U</span><span aria-hidden="true">S</span><span aria-hidden="true">I</span><span aria-hidden="true">C</span></button>
 </nav></main>
 <script type="module">
-import {zoomState,setCamera} from './shared/zoom.js?v=310475587968';
+import {zoomState,setCamera} from './shared/zoom.js?v=11b231bd80db';
 const camera=document.getElementById('camera'),landscape=document.getElementById('landscape'),journey=document.getElementById('journey');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');const clamp=x=>Math.max(0,Math.min(1,x));const ease=x=>x*x*(3-2*x);let scheduled=false;
 const mask=document.querySelector('#mirror path'),portrait=document.getElementById('portrait');

@@ -1,11 +1,11 @@
-import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut,listCollection,setPhotoFeatured,removePhoto} from '../shared/connection.js?v=310475587968';
-import {DISPLAY_MS,choosePhoto,frameSize,photoPosition} from './gallery.js?v=310475587968';
+import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut,listCollection,setPhotoFeatured,removePhoto} from '../shared/connection.js?v=11b231bd80db';
+import {DISPLAY_MS,choosePhoto,frameSize,photoPosition} from './gallery.js?v=11b231bd80db';
 const $=id=>document.getElementById(id);let photos=[],current=0,timer=null,showing=null,generation=0,previewUrl=null,galleryRequest=0,selectionGeneration=0,uploading=false,uploadQueue=[],collectionRequest=0;
 const inCollection=()=>['#upload','#collection'].includes(location.hash);
 $('menu-button').onclick=()=>{$('menu').hidden=!$('menu').hidden;$('menu-button').setAttribute('aria-expanded',String(!$('menu').hidden));};
 let previousSide=null,nextSide=null,nextPhoto=null,sideGeneration=0,animations=new Set();
 const reducedMotion=()=>globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-function position(item,slot='center'){const width=$('gallery').clientWidth||innerWidth,height=$('gallery').clientHeight||innerHeight;return photoPosition(width,height,item.orientation==='portrait',slot,width<=600?24:32);}
+function position(item,slot='center',anchor=showing||item){const width=$('gallery').clientWidth||innerWidth,height=$('gallery').clientHeight||innerHeight;return photoPosition(width,height,item.orientation==='portrait',slot,width<=600?24:32,anchor.orientation==='portrait');}
 function place(element,item,slot){const box=position(item,slot);Object.assign(element.style,{left:box.left+'px',top:box.top+'px',width:box.width+'px',height:box.height+'px'});return box;}
 function animate(element,frames,options){const animation=element.animate?.(frames,options);if(!animation)return null;animations.add(animation);animation.finished.catch(()=>{}).finally(()=>animations.delete(animation));return animation;}
 function removeSide(side){side?.element.remove();}
@@ -38,14 +38,14 @@ async function show(index){
  if(!showing)$('empty').textContent='Loading photographs…';loaded.src=item.url;
  try{await loaded.decode();}catch{if(token!==generation)return;$('empty').textContent='This photograph couldn’t be loaded.';$('empty').hidden=false;schedule();return;}
  if(token!==generation)return;
- const changed=showing&&showing.id!==item.id,oldItem=showing,oldBox=oldItem&&position(oldItem);
+ const changed=showing&&showing.id!==item.id,oldItem=showing,incomingBox=oldItem&&position(item,'next',oldItem);
  clearMotion();
  if(changed)previousSide=makeSide(oldItem,'previous');
  current=index;showing=item;$('photo').src=loaded.src;$('photo').alt=item.description||'Photograph';resize();$('frame').hidden=false;$('empty').hidden=true;
  if(changed&&!reducedMotion()){
-  const options={duration:1600,easing:'cubic-bezier(.22,.61,.36,1)'},center=position(item),incoming=position(item,'next'),outgoing=position(oldItem,'previous');
-  animate(previousSide.element,[{transform:`translateX(${oldBox.left-outgoing.left}px)`},{transform:'translateX(0)'}],options);
-  const entering=animate($('frame'),[{transform:`translateX(${incoming.left-center.left}px)`},{transform:'translateX(0)'}],options);
+  const options={duration:1600,easing:'cubic-bezier(.22,.61,.36,1)'},center=position(item),distance=incomingBox.left-center.left;
+  animate(previousSide.element,[{transform:`translateX(${distance}px)`},{transform:'translateX(0)'}],options);
+  const entering=animate($('frame'),[{transform:`translateX(${distance}px)`},{transform:'translateX(0)'}],options);
   if(entering)await entering.finished.catch(()=>{});
   if(token!==generation)return;
  }

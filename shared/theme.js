@@ -14,7 +14,7 @@
       const action = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
       toggle.setAttribute('aria-label', action);
       toggle.title = action;
-      toggle.firstElementChild.textContent = theme === 'dark' ? '☀' : '☾';
+      toggle.firstElementChild.textContent = theme === 'dark' ? 'LIGHT' : 'DARK';
     }
   }
   apply();
@@ -25,7 +25,7 @@
     apply();
   });
   function mount() {
-    if (document.getElementById('theme-toggle')) return;
+    if (document.getElementById('journey') || document.getElementById('theme-toggle')) return;
     toggle = document.createElement('button');
     toggle.id = 'theme-toggle';
     toggle.className = 'theme-toggle';
