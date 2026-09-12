@@ -15,18 +15,16 @@ html.site-arriving.site-reveal::after{animation:site-reveal .48s ease-out forwar
 @media(prefers-reduced-motion:reduce){html.site-arriving::after{display:none}}
 `;
 document.head.append(styles);
-function clean(){document.querySelectorAll('.site-curtain,.site-selected').forEach(el=>el.remove());document.documentElement.classList.remove('site-arriving','site-reveal','mountain-exit');document.querySelectorAll('#world,.navigation button,.mountain-layer,#mirror-paper,#landscape-original').forEach(el=>el.getAnimations().forEach(a=>a.cancel()));const original=document.getElementById('landscape-original');if(original)original.style.visibility='';document.getElementById('mountain-layers')?.setAttribute('visibility','hidden');navigating=false;}
+function clean(){document.querySelectorAll('.site-curtain,.site-selected').forEach(el=>el.remove());document.documentElement.classList.remove('site-arriving','site-reveal','mountain-exit');document.querySelectorAll('#world,.navigation button,.mountain-layer,#mirror-paper').forEach(el=>el.getAnimations().forEach(a=>a.cancel()));navigating=false;}
 async function animate(el,frames,duration){try{await el.animate(frames,{duration,easing:'ease-in-out',fill:'forwards'}).finished;}catch{}}
 async function mountainExit(){
  const world=document.getElementById('world');
  if(!world)return;
  document.documentElement.classList.add('mountain-exit');
- // Vector masks approximate three depth regions of the supplied flat photograph.
- const original=document.getElementById('landscape-original');
- document.getElementById('mountain-layers').setAttribute('visibility','visible');
+ // Supplied photographic layers retain their original composition offsets.
  const start=getComputedStyle(world).transform;
  const target=Math.max(Math.max(innerWidth/538,innerHeight/749)*2.5,new DOMMatrix(start).a*1.25);
- const motions=[animate(original,[{opacity:1},{opacity:0}],480),animate(world,[{transform:start},{transform:`translate(${-1517*target}px,${-837.5*target}px) scale(${target})`}],1450)];
+ const motions=[animate(world,[{transform:start},{transform:`translate(${-1517*target}px,${-837.5*target}px) scale(${target})`}],1450)];
  document.querySelectorAll('.navigation button').forEach(el=>motions.push(animate(el,[{opacity:1},{opacity:0}],260)));
  document.querySelectorAll('.mountain-layer').forEach((el,i)=>motions.push(animate(el,[{transform:'translateY(0)'},{transform:`translateY(${[2200,3200,4400][i]}px)`}],1450)));
  motions.push(animate(document.getElementById('mirror-paper'),[{fill:'#ebebeb'},{fill:'#f5f4ef'}],1450));
