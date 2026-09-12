@@ -1,31 +1,49 @@
-import {createSaveQueue} from '../shared/save-queue.js?v=975fc9e7353b';
-import {querySubmissions} from '../shared/submission-query.js?v=975fc9e7353b';
-import {listVenues,saveVenue} from '../shared/venues.js?v=975fc9e7353b';
-import {exportPoemPDF} from '../shared/poem-pdf.js?v=975fc9e7353b';
-import {analyzePoem} from '../shared/prosody.js?v=975fc9e7353b';
-import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=975fc9e7353b';
-import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=975fc9e7353b';
-import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=975fc9e7353b';
-import {readingOrder} from './order.js?v=975fc9e7353b';
+import {createSaveQueue} from '../shared/save-queue.js?v=dd99e2cbfb94';
+import {querySubmissions} from '../shared/submission-query.js?v=dd99e2cbfb94';
+import {listVenues,saveVenue} from '../shared/venues.js?v=dd99e2cbfb94';
+import {exportPoemPDF} from '../shared/poem-pdf.js?v=dd99e2cbfb94';
+import {analyzePoem} from '../shared/prosody.js?v=dd99e2cbfb94';
+import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=dd99e2cbfb94';
+import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=dd99e2cbfb94';
+import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=dd99e2cbfb94';
+import {readingOrder} from './order.js?v=dd99e2cbfb94';
 let venues=[],venueReady=false;const tableQueries=new Map();
+let readerFlight=null,readerLoaded=false,studioFlight=null;
 let backendReady=false,active,permissions={editPoems:false,manageSubmissions:false,comment:false},commentRequest=0,commentAnchor='';
 const $=id=>document.getElementById(id),motion=matchMedia('(prefers-reduced-motion: reduce)');
 const menu=$('studio-menu');$('studio-toggle').onclick=()=>{menu.hidden=!menu.hidden;$('studio-toggle').setAttribute('aria-expanded',String(!menu.hidden));};
-function route(){const view=['write','review'].includes(location.hash.slice(1))?location.hash.slice(1):'read';for(const name of ['read','write','review'])$(name+'-view').hidden=name!==view;$('section-name').textContent=view==='read'?'':view.toUpperCase();menu.hidden=true;$('studio-toggle').setAttribute('aria-expanded','false');$('studio-auth').hidden=view==='read'||backendReady||!configured; if(view==='write'&&backendReady)openDraft(active);if(view==='review'&&backendReady)renderReview();for(const el of document.querySelectorAll('#write-view input,#write-view select,#write-view textarea,#write-view button,#review-view input,#review-view select,#review-view button'))el.disabled=!backendReady;applyPermissions();}
+function currentView(){const hash=location.hash.slice(1);if(['write','review'].includes(hash))return hash;const params=new URLSearchParams(hash);return params.has('access_token')||params.has('error_description')?'write':'read';}
+function route(load=true){const view=currentView();for(const name of ['read','write','review'])$(name+'-view').hidden=name!==view;$('section-name').textContent=view==='read'?'':view.toUpperCase();menu.hidden=true;$('studio-toggle').setAttribute('aria-expanded','false');$('studio-auth').hidden=view==='read'||backendReady||!configured;
+ if(view==='write'&&backendReady)openDraft(active);if(view==='review'&&backendReady)renderReview();
+ for(const el of document.querySelectorAll('#write-view input,#write-view select,#write-view textarea,#write-view button,#review-view input,#review-view select,#review-view button'))el.disabled=!backendReady;
+ $('studio-sign-out').hidden=!configured||!backendReady;applyPermissions();
+ if(load!==false){if(view==='read')ensureReader();else ensureStudio();}
+}
 addEventListener('hashchange',route);addEventListener('keydown',e=>{if(e.key==='Escape'){menu.hidden=true;$('studio-toggle').setAttribute('aria-expanded','false');}});
 let index=0,count=0;const pages=$('pages');
 function controls(){index=Math.round(pages.scrollLeft/Math.max(1,pages.clientWidth));$('previous').disabled=index<=0;$('next').disabled=index>=count-1;$('position').textContent=count?`${index+1} / ${count}`:'';}
 function turn(direction){const target=Math.max(0,Math.min(count-1,index+direction));if(target===index)return;pages.scrollTo({left:target*pages.clientWidth,behavior:motion.matches?'instant':'smooth'});}
 $('previous').onclick=()=>turn(-1);$('next').onclick=()=>turn(1);pages.addEventListener('scroll',controls,{passive:true});pages.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();turn(e.key==='ArrowRight'?1:-1);}});
 let resizeTimer;addEventListener('resize',()=>{const current=index;clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{pages.scrollTo({left:current*pages.clientWidth,behavior:'instant'});controls();},100);});
+function ensureReader(){if(readerLoaded)return Promise.resolve();if(!readerFlight)readerFlight=loadReader().finally(()=>{readerFlight=null;});return readerFlight;}
 async function loadReader(){
-try{const data=await publishedPoems();const poems=data.filter(p=>typeof p.id==='string'&&typeof p.body==='string'&&p.published===true);let saved;try{saved=JSON.parse(sessionStorage.getItem('poetry-order'));}catch{}const order=readingOrder(poems,saved);try{sessionStorage.setItem('poetry-order',JSON.stringify(order));}catch{}count=order.length;for(const id of order){const poem=poems.find(p=>p.id===id),page=document.createElement('article'),content=document.createElement('div'),title=document.createElement('h1'),body=document.createElement('div');page.className='page';content.className='page-content';title.textContent=poem.title||'Untitled';body.className='poem';renderPoem(body,poem.body,poem.layout);const venues=Array.isArray(poem.publications)?[...new Set(poem.publications.filter(v=>typeof v==='string'&&v.trim()).map(v=>v.trim()))]:[];if(venues.length){const credit=document.createElement('p');credit.className='publication-credit';credit.textContent='Published in '+venues.join(', ');content.append(credit);}content.append(title,body);if(poem.author){const author=document.createElement('p');author.className='byline';author.textContent=poem.author;content.append(author);}page.append(content);pages.append(page);}if(count){pages.hidden=false;$('reader-footer').hidden=false;}if(!count){pages.hidden=true;$('empty').hidden=false;$('reader-footer').hidden=true;}controls();}catch{pages.hidden=true;$('empty').hidden=false;$('reader-footer').hidden=true;$('empty-message').textContent='The collection couldn’t be loaded. Please try again later.';}
-if(!['write','review'].includes(location.hash.slice(1)))dispatchEvent(new Event('site-ready'));
+try{const data=await publishedPoems();pages.replaceChildren();$('empty').hidden=true;const poems=data.filter(p=>typeof p.id==='string'&&typeof p.body==='string'&&p.published===true);let saved;try{saved=JSON.parse(sessionStorage.getItem('poetry-order'));}catch{}const order=readingOrder(poems,saved);try{sessionStorage.setItem('poetry-order',JSON.stringify(order));}catch{}count=order.length;for(const id of order){const poem=poems.find(p=>p.id===id),page=document.createElement('article'),content=document.createElement('div'),title=document.createElement('h1'),body=document.createElement('div');page.className='page';content.className='page-content';title.textContent=poem.title||'Untitled';body.className='poem';renderPoem(body,poem.body,poem.layout);const venues=Array.isArray(poem.publications)?[...new Set(poem.publications.filter(v=>typeof v==='string'&&v.trim()).map(v=>v.trim()))]:[];if(venues.length){const credit=document.createElement('p');credit.className='publication-credit';credit.textContent='Published in '+venues.join(', ');content.append(credit);}content.append(title,body);if(poem.author){const author=document.createElement('p');author.className='byline';author.textContent=poem.author;content.append(author);}page.append(content);pages.append(page);}if(count){pages.hidden=false;$('reader-footer').hidden=false;}if(!count){pages.hidden=true;$('empty').hidden=false;$('reader-footer').hidden=true;}controls();readerLoaded=true;}catch{pages.hidden=true;$('empty').hidden=false;$('reader-footer').hidden=true;$('empty-message').textContent='The collection couldn’t be loaded. Please try again later.';}
+if(currentView()==='read')dispatchEvent(new Event('site-ready'));
 }
-loadReader();
-const key='verse-web-drafts-v1';let drafts=[];try{drafts=configured?[]:JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(drafts))drafts=[];}catch{}let revisions={},submissions=[];
-try{await acceptSignInLink();const studio=await loadStudio();drafts=studio.drafts;submissions=studio.submissions;revisions=studio.revisions;permissions=studio.permissions||{editPoems:true,manageSubmissions:true,comment:false};backendReady=true;}catch(error){$('save-state').textContent=configured?error.message:'Studio unavailable — export a copy';}
-active=drafts[0]?.id;
+const key='verse-web-drafts-v1';let drafts=[],revisions={},submissions=[];
+function ensureStudio(){
+ if(backendReady)return Promise.resolve();if(studioFlight)return studioFlight;
+ $('studio-auth').hidden=true;$('save-state').textContent='Loading studio…';
+ studioFlight=(async()=>{
+  try{await acceptSignInLink();
+   if(!configured){try{const local=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(local))drafts=local;}catch{}}
+   const studio=await loadStudio();drafts=studio.drafts;submissions=studio.submissions;revisions=studio.revisions;permissions=studio.permissions||{editPoems:false,manageSubmissions:false,comment:false};backendReady=true;active=drafts[0]?.id;
+  }catch(error){$('save-state').textContent=configured?error.message:'Studio unavailable — export a copy';}
+  route(false);if(currentView()!=='read')dispatchEvent(new Event('site-ready'));
+  if(backendReady&&configured&&!venueReady)loadVenueDirectory();
+ })().finally(()=>{studioFlight=null;});return studioFlight;
+}
+async function loadVenueDirectory(){try{venues=await listVenues();venueReady=true;renderVenues();}catch(error){submissionSaveState(error.message);}}
 const draftSaves=createSaveQueue(async()=>{
  const snapshot=JSON.parse(JSON.stringify(drafts));
  if(!configured)localStorage.setItem(key,JSON.stringify(snapshot));
@@ -136,8 +154,6 @@ $('submission-form').onsubmit=event=>addSubmission(event,'',$('submission-poem')
 $('studio-note').textContent=configured?'Your private online workspace. Choose what to publish in Review.':'Drafts are saved on this Mac. Keep versions as you work, then choose what to publish in Review.';
 $('studio-login-form').onsubmit=async e=>{e.preventDefault();$('studio-send').disabled=true;try{await signIn($('studio-email').value.trim(),new URL('./',location.href).href);$('studio-login-state').textContent='Open the sign-in email on this device.';}catch(error){$('studio-login-state').textContent=error.message;}finally{$('studio-send').disabled=false;}};
 $('studio-sign-out').hidden=!configured||!backendReady;$('studio-sign-out').onclick=()=>{signOut();location.reload();};
-route();
-if(['write','review'].includes(location.hash.slice(1)))dispatchEvent(new Event('site-ready'));
 
 function applyPermissions(){
  const canEdit=backendReady&&permissions.editPoems,canManage=backendReady&&permissions.manageSubmissions;
@@ -179,4 +195,4 @@ for(const prefix of ['', 'draft-']){
  $(prefix+'magazine').addEventListener('input',()=>{const match=venueMatch($(prefix+'magazine').value);if(match){$(prefix+'venue-url').value=match.submission_url||'';$(prefix+'venue-format').value=match.format||'';}});
  $(prefix+'magazine').addEventListener('change',()=>{const match=venueMatch($(prefix+'magazine').value);$(prefix+'venue-url').value=match?.submission_url||'';$(prefix+'venue-format').value=match?.format||'';});
 }
-if(backendReady&&configured){try{venues=await listVenues();venueReady=true;renderVenues();}catch(error){submissionSaveState(error.message);}}
+route();
