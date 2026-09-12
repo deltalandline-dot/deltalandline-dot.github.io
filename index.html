@@ -9,14 +9,14 @@
 :root{--ink:#111110;--paper:#f5f4ef;--red:#ff3028}
 *{box-sizing:border-box}
 html{background:var(--ink);color:var(--paper);font-family:'Switzer',sans-serif}
-body{margin:0}
+body{margin:0;overscroll-behavior:none}
 .journey{height:580vh;height:580svh}
-.viewport{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;background:var(--ink)}
+.viewport{position:fixed;inset:0;overflow:hidden;background:var(--ink)}
 .world{position:absolute;left:50%;top:50%;width:3000px;height:2000px;transform-origin:0 0;will-change:transform}
 .composition{width:100%;height:100%;display:block}
 
 .navigation{display:contents}
-.navigation button{position:fixed;z-index:5;left:50%;top:calc(50% + (var(--row) - 2)*clamp(49px,calc(4.032vw + 19px),73px));transform:translate(-50%,-50%);width:220px;text-align:justify;text-align-last:justify;text-justify:inter-character;pointer-events:auto;display:flex;justify-content:space-between;background:transparent;border:0;color:#fff;mix-blend-mode:difference;font:600 clamp(26.4px,3.6vw,48px)/1.12 'Switzer',sans-serif;letter-spacing:-.025em;padding:7px 18px;min-height:44px;cursor:pointer}
+.navigation button{position:fixed;z-index:5;left:50%;top:calc(50% + (var(--row) - 2)*clamp(49px,calc(4.032vw + 19px),73px)*var(--menu-scale,1));transform:translate(-50%,-50%) scale(var(--menu-scale,1));width:220px;text-align:justify;text-align-last:justify;text-justify:inter-character;pointer-events:auto;display:flex;justify-content:space-between;background:transparent;border:0;color:#fff;mix-blend-mode:difference;font:600 clamp(26.4px,3.6vw,48px)/1.12 'Switzer',sans-serif;letter-spacing:-.025em;padding:7px 18px;min-height:44px;cursor:pointer}
 .navigation button:hover,.navigation button:focus-visible{color:var(--red);mix-blend-mode:normal}
 .navigation button:focus-visible{outline:1px solid currentColor;outline-offset:3px}
 @media(max-width:600px){.navigation{gap:7px}}
@@ -39,7 +39,8 @@ body{margin:0}
 <g id="photoClip" clip-path="url(#mirror)"><image id="landscape" href="inner.png" x="1248" y="463" width="538" height="749" preserveAspectRatio="xMidYMid slice"/></g>
 </svg></div>
 </div></main>
-<script>
+<script type="module">
+import {zoomState} from './shared/zoom.js?v=3c549a4b7f8c';
 const world=document.getElementById('world'),landscape=document.getElementById('landscape'),journey=document.getElementById('journey');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');const clamp=x=>Math.max(0,Math.min(1,x));const ease=x=>x*x*(3-2*x);let scheduled=false;
 const mask=document.querySelector('#mirror path'),portrait=document.getElementById('portrait');
@@ -51,17 +52,13 @@ function fitMirror(w,h){let scale=Math.max(w/538,h/749);while(![-1,1].every(x=>[
 
 function render(){
  scheduled=false;
- const w=innerWidth,h=innerHeight,p=clamp(scrollY/(journey.offsetHeight-h));
- const first=ease(clamp(p/.45)),second=ease(clamp((p-.50)/.50));
+ const viewport=document.querySelector('.viewport'),w=viewport.clientWidth,h=viewport.clientHeight;
+ const p=clamp(scrollY/Math.max(1,journey.offsetHeight-document.documentElement.clientHeight));
  if(w!==previousWidth||h!==previousHeight){fit=fitMirror(w,h);previousWidth=w;previousHeight=h;}
- const end=Math.max(w/3000,h/2000);
- const t=reduced.matches?1:second;
- const scale=fit*Math.pow(end/fit,t);
- const cx=1517+(1500-1517)*t,cy=837.5+(1000-837.5)*t;
- world.style.transform=`translate(${-cx*scale}px,${-cy*scale}px) scale(${scale})`;
- const initialZoom=2.8/1.15;
- const innerScale=reduced.matches?1:initialZoom*Math.pow(1/initialZoom,first);
- landscape.setAttribute('transform',`translate(1517 837.5) scale(${innerScale}) translate(-1517 -837.5)`);
+ const state=zoomState(p,w,h,fit,reduced.matches);
+ world.style.transform=`translate(${state.x}px,${state.y}px) scale(${state.scale})`;
+ document.documentElement.style.setProperty('--menu-scale',state.menuScale);
+ landscape.setAttribute('transform',`translate(1517 837.5) scale(${state.innerScale}) translate(-1517 -837.5)`);
  // The aperture and portrait always share the same camera transform.
  // At the handoff all four viewport corners are still inside the aperture.
  mask.removeAttribute('transform');

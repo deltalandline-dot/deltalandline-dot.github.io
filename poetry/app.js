@@ -1,6 +1,6 @@
-import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=5f3815fe6039';
-import {publishedPoems,loadStudio,saveCollection} from '../shared/poetry-store.js?v=5f3815fe6039';
-import {readingOrder} from './order.js?v=5f3815fe6039';
+import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=3c549a4b7f8c';
+import {publishedPoems,loadStudio,saveCollection} from '../shared/poetry-store.js?v=3c549a4b7f8c';
+import {readingOrder} from './order.js?v=3c549a4b7f8c';
 const $=id=>document.getElementById(id),motion=matchMedia('(prefers-reduced-motion: reduce)');
 const menu=$('studio-menu');$('studio-toggle').onclick=()=>{menu.hidden=!menu.hidden;$('studio-toggle').setAttribute('aria-expanded',String(!menu.hidden));};
 function route(){const view=['write','review'].includes(location.hash.slice(1))?location.hash.slice(1):'read';for(const name of ['read','write','review'])$(name+'-view').hidden=name!==view;$('section-name').textContent=view.toUpperCase();menu.hidden=true;$('studio-toggle').setAttribute('aria-expanded','false');$('studio-auth').hidden=view==='read'||backendReady||!configured; if(view==='write'&&backendReady)openDraft(active);if(view==='review'&&backendReady)renderReview();for(const el of document.querySelectorAll('#write-view input,#write-view textarea,#write-view button,#review-view input,#review-view select,#review-view button'))el.disabled=!backendReady;}
