@@ -1,13 +1,15 @@
-import {setCamera} from './zoom.js?v=a8d72114f8c7';
+import {setCamera} from './zoom.js?v=c22e598a6f7d';
 // A single real navigation, with a solid curtain spanning the document change.
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const release=new URL(import.meta.url).searchParams.get('v');
 let navigating=false,revealing=false,epoch=0;
 let slicesReady;
 function blockScroll(event){event.preventDefault();}
-function lockScroll(){for(const type of ['wheel','touchmove'])addEventListener(type,blockScroll,{passive:false});}
-function unlockScroll(){for(const type of ['wheel','touchmove'])removeEventListener(type,blockScroll);}
-function ensureSlices(){return slicesReady??=Promise.all([...document.querySelectorAll('.mountain-layer image')].map(async el=>{const src=el.dataset.src;const image=new Image();image.src=src;await image.decode();el.setAttribute('href',src);})).then(()=>true,()=>false);}
+// Clear departure UI before a native unsaved-change prompt, which may be cancelled.
+// Bind only during transitions so idle pages retain browser-history cache eligibility.
+function lockScroll(){for(const type of ['wheel','touchmove'])addEventListener(type,blockScroll,{passive:false});addEventListener('beforeunload',clean);}
+function unlockScroll(){for(const type of ['wheel','touchmove'])removeEventListener(type,blockScroll);removeEventListener('beforeunload',clean);}
+function ensureSlices(){return slicesReady??=Promise.all([...document.querySelectorAll('.mountain-layer image')].map(async el=>{const src=el.dataset.src;const image=new Image();image.src=src;await image.decode();el.setAttribute('href',src);})).then(()=>true,()=>{slicesReady=undefined;return false;});}
 async function prepareSlices(){return Promise.race([ensureSlices(),new Promise(resolve=>setTimeout(()=>resolve(false),300))]);}
 const travel=[[0,3800],[1700,3200],[-2100,4400]];
 const duration=750;
@@ -105,7 +107,7 @@ async function mountainReturn(token){
  await Promise.all(motions);if(token!==epoch)return;await animate(document.getElementById('scroll-photo'),[{opacity:0},{opacity:1}],100);if(token===epoch)clean();
 }
 function reveal(){
- if(revealing||!document.documentElement.classList.contains('site-arriving'))return;
+ if(navigating||revealing||!document.documentElement.classList.contains('site-arriving'))return;
  revealing=true;const token=++epoch;
  if(isHome()&&!reduced.matches){navigating=true;lockScroll();mountainReturn(token).catch(()=>{if(token===epoch)clean();});return;}
  requestAnimationFrame(()=>requestAnimationFrame(()=>{

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
-<head><meta name="referrer" content="no-referrer"><link rel="stylesheet" href="./shared/theme.css?v=a8d72114f8c7"><script src="./shared/theme.js?v=a8d72114f8c7"></script><style>html.site-arriving::after{content:'';position:fixed;inset:0;background:#f5f4ef;z-index:10002}html.site-arriving{background:#f5f4ef}</style><script>try{const a=JSON.parse(sessionStorage.getItem('site-arrival'));sessionStorage.removeItem('site-arrival');if(a&&a.path===location.pathname&&Date.now()-a.time<15000&&!matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.classList.add('site-arriving');setTimeout(()=>document.documentElement.classList.remove('site-arriving'),5000);}}catch{}</script>
-<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin><link rel="stylesheet" href="./shared/fonts.css?v=a8d72114f8c7"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<head><meta name="referrer" content="no-referrer"><link rel="stylesheet" href="./shared/theme.css?v=c22e598a6f7d"><script src="./shared/theme.js?v=c22e598a6f7d"></script><style>html.site-arriving::after{content:'';position:fixed;inset:0;background:#f5f4ef;z-index:10002}html.site-arriving{background:#f5f4ef}</style><script>try{const a=JSON.parse(sessionStorage.getItem('site-arrival'));sessionStorage.removeItem('site-arrival');if(a&&a.path===location.pathname&&Date.now()-a.time<15000&&!matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.classList.add('site-arriving');setTimeout(()=>document.documentElement.classList.remove('site-arriving'),5000);}}catch{}</script>
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin><link rel="stylesheet" href="./shared/fonts.css?v=c22e598a6f7d"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>delta as in land lines</title>
 
 
@@ -20,15 +20,24 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 
 /* Each label blends directly with the photograph; no enclosing paint layer. */
 .navigation,#menu-items{display:contents}
-.navigation button{position:fixed;z-index:5;left:calc(50% + var(--menu-offset,0px));top:42%;transform:translate(-50%,-50%);width:max-content;min-width:44px;height:44px;pointer-events:auto;display:flex;align-items:center;justify-content:center;background:transparent;border:0;color:#fff;mix-blend-mode:difference;font:450 clamp(14px,2.2vmin,18px)/1.12 'Switzer',sans-serif;letter-spacing:0;padding:0 8px;cursor:pointer}
+.navigation button{position:fixed;z-index:5;left:calc(50% + var(--menu-offset,0px));top:var(--menu-y,25%);transform:translate(-50%,-50%);width:max-content;min-width:44px;height:44px;pointer-events:auto;display:flex;align-items:center;justify-content:center;background:transparent;border:0;color:#fff;mix-blend-mode:difference;font:450 clamp(14px,2.2vmin,18px)/1.12 'Switzer',sans-serif;letter-spacing:0;padding:0 8px;cursor:pointer}
 .navigation button[hidden]{display:none!important}
 .navigation button:hover,.navigation button:focus-visible{color:var(--red);mix-blend-mode:normal;outline:none}
-.navigation .menu-toggle{left:50%;font-size:24px;letter-spacing:3px}
-.navigation[data-open="true"] .menu-item{left:50%;top:calc(min(42%,calc(100% - 264px)) + (var(--row) + 1)*44px)}
-.navigation[data-open="true"] .menu-toggle{top:min(42%,calc(100% - 264px))}
-@media(prefers-reduced-motion:reduce){.scroll-range{height:180svh}}
+.navigation .menu-item{opacity:1;visibility:visible;transition:left .42s ease .3s,opacity .28s ease .3s,visibility 0s}
+.navigation .menu-item[aria-label="POETRY"]{z-index:7;transition:left .42s ease,opacity .2s ease .14s,visibility 0s}
+.navigation .menu-toggle{left:50%;font-size:24px;letter-spacing:3px;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s ease,visibility 0s .16s}
+.navigation[data-collapsed="true"] .menu-item{left:50%;opacity:0;visibility:hidden;pointer-events:none;transition:left .42s ease,opacity .36s ease,visibility 0s .62s}
+.navigation[data-collapsed="true"] .menu-item[aria-label="POETRY"]{transition:left .42s ease,opacity .2s ease .42s,visibility 0s .62s}
+.navigation[data-collapsed="true"] .menu-toggle{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .2s ease .62s,visibility 0s .62s}
+.navigation .menu-toggle:focus-visible{opacity:1;visibility:visible;transition:none}
+.navigation[data-open="true"] .menu-item[aria-label]{opacity:1;visibility:visible;pointer-events:auto;transition:none}
+.navigation[data-open="true"] .menu-toggle{transition:none}
+.navigation:not([data-ready="true"]) button{transition:none!important}
+.navigation[data-open="true"] .menu-item{left:50%;top:calc(min(var(--menu-y,25%),calc(100% - 264px)) + (var(--row) + 1)*44px)}
+.navigation[data-open="true"] .menu-toggle{top:min(var(--menu-y,25%),calc(100% - 264px))}
+@media(prefers-reduced-motion:reduce){.scroll-range{height:180svh}.navigation button{transition:none!important}}
 </style>
-<script type="module" blocking="render" src="./shared/transitions.js?v=a8d72114f8c7"></script></head>
+<script type="module" blocking="render" src="./shared/transitions.js?v=c22e598a6f7d"></script></head>
 <body>
 
 <div class="viewport">
@@ -61,7 +70,7 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 <button class="menu-item" type="button" aria-label="MUSIC" style="--row:4"><span aria-hidden="true">M</span><span aria-hidden="true">U</span><span aria-hidden="true">S</span><span aria-hidden="true">I</span><span aria-hidden="true">C</span></button>
 </div></nav></main>
 <script type="module">
-import {zoomState,setCamera,menuFitsMirror} from './shared/zoom.js?v=a8d72114f8c7';
+import {zoomState,setCamera,menuFitsMirror,menuSkyY} from './shared/zoom.js?v=c22e598a6f7d';
 const camera=document.getElementById('camera'),landscape=document.getElementById('landscape'),journey=document.getElementById('journey');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');const clamp=x=>Math.max(0,Math.min(1,x));const ease=x=>x*x*(3-2*x);let scheduled=false;
 const mask=document.querySelector('#mirror path'),portrait=document.getElementById('portrait');
@@ -76,15 +85,18 @@ function measureMenu(){
  menuItems.forEach(button=>button.hidden=false);
  const widths=menuItems.map(button=>button.offsetWidth),gap=8;
  menuWidth=widths.reduce((sum,w)=>sum+w,0)+gap*(widths.length-1);
- let offset=-menuWidth/2;
- menuItems.forEach((button,i)=>{button.style.setProperty('--menu-offset',`${offset+widths[i]/2}px`);offset+=widths[i]+gap;});
+ let offset=-menuWidth/2;const centers=widths.map(w=>{const center=offset+w/2;offset+=w+gap;return center;});
+ const middle=centers[2];
+ menuWidth=2*Math.max(...centers.map((center,i)=>Math.abs(center-middle)+widths[i]/2));
+ menuItems.forEach((button,i)=>button.style.setProperty('--menu-offset',`${centers[i]-middle}px`));
 }
 function showMenu(){
  navigation.dataset.open=String(collapsed&&menuOpen);
- toggle.hidden=!collapsed;
+ navigation.dataset.collapsed=String(collapsed);
+ toggle.hidden=false;toggle.inert=!collapsed;toggle.tabIndex=collapsed?0:-1;toggle.setAttribute('aria-hidden',String(!collapsed));
  toggle.setAttribute('aria-expanded',String(collapsed&&menuOpen));
  toggle.setAttribute('aria-label',menuOpen?'Close portfolio menu':'Open portfolio menu');
- menuItems.forEach(button=>button.hidden=collapsed&&!menuOpen);
+ menuItems.forEach(button=>{const unavailable=collapsed&&!menuOpen;button.hidden=false;button.inert=unavailable;button.tabIndex=unavailable?-1:0;button.setAttribute('aria-hidden',String(unavailable));});
 }
 toggle.addEventListener('click',()=>{menuOpen=!menuOpen;showMenu();});
 navigation.addEventListener('keydown',event=>{if(event.key==='Escape'&&menuOpen){event.preventDefault();menuOpen=false;showMenu();toggle.focus();}});
@@ -98,6 +110,7 @@ function render(){
  const p=clamp(journey.scrollTop/scrollRange);
  const state=zoomState(p,width,height,fit,reduced.matches);
  if(!lastState||state.scale!==lastState.scale)setCamera(camera,state.scale,width,height);
+ if(!lastState||state.scale!==lastState.scale)navigation.style.setProperty('--menu-y',`${menuSkyY(height,state.scale)}px`);
  const nextCollapsed=!menuFitsMirror({width,height,scale:state.scale,rowWidth:menuWidth,rowHeight:44,collapsed},inside);
  if(nextCollapsed!==collapsed||!lastState){
   const focusedItem=menuItems.includes(document.activeElement),focusedToggle=document.activeElement===toggle;
@@ -121,6 +134,6 @@ addEventListener('keydown',event=>{
  if(step!==undefined){event.preventDefault();journey.scrollTop+=step;}
  else if(event.key==='Home'||event.key==='End'){event.preventDefault();journey.scrollTop=event.key==='Home'?0:scrollRange;}
 });
-function schedule(){if(!scheduled){scheduled=true;requestAnimationFrame(render)}}addEventListener('site-home-render',()=>{lastState=null;render()});journey.addEventListener('scroll',schedule,{passive:true});addEventListener('resize',measure);reduced.addEventListener('change',measure);document.fonts?.ready.then(measure);document.querySelector('[aria-label="IMAGES"]').onclick=()=>{location.href='./images/';};document.querySelector('[aria-label="POETRY"]').onclick=()=>{location.href='./poetry/';};measure();render();
+function schedule(){if(!scheduled){scheduled=true;requestAnimationFrame(render)}}addEventListener('site-home-render',()=>{lastState=null;render()});journey.addEventListener('scroll',schedule,{passive:true});addEventListener('resize',measure);reduced.addEventListener('change',measure);document.fonts?.ready.then(measure);document.querySelector('[aria-label="IMAGES"]').onclick=()=>{location.href='./images/';};document.querySelector('[aria-label="POETRY"]').onclick=()=>{location.href='./poetry/';};measure();render();requestAnimationFrame(()=>requestAnimationFrame(()=>navigation.dataset.ready='true'));
 </script>
 </body></html>

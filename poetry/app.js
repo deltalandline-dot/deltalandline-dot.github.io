@@ -1,11 +1,12 @@
-import {querySubmissions} from '../shared/submission-query.js?v=a8d72114f8c7';
-import {listVenues,saveVenue} from '../shared/venues.js?v=a8d72114f8c7';
-import {exportPoemPDF} from '../shared/poem-pdf.js?v=a8d72114f8c7';
-import {analyzePoem} from '../shared/prosody.js?v=a8d72114f8c7';
-import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=a8d72114f8c7';
-import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=a8d72114f8c7';
-import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=a8d72114f8c7';
-import {readingOrder} from './order.js?v=a8d72114f8c7';
+import {createSaveQueue} from '../shared/save-queue.js?v=c22e598a6f7d';
+import {querySubmissions} from '../shared/submission-query.js?v=c22e598a6f7d';
+import {listVenues,saveVenue} from '../shared/venues.js?v=c22e598a6f7d';
+import {exportPoemPDF} from '../shared/poem-pdf.js?v=c22e598a6f7d';
+import {analyzePoem} from '../shared/prosody.js?v=c22e598a6f7d';
+import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=c22e598a6f7d';
+import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=c22e598a6f7d';
+import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=c22e598a6f7d';
+import {readingOrder} from './order.js?v=c22e598a6f7d';
 let venues=[],venueReady=false;const tableQueries=new Map();
 let backendReady=false,active,permissions={editPoems:false,manageSubmissions:false,comment:false},commentRequest=0,commentAnchor='';
 const $=id=>document.getElementById(id),motion=matchMedia('(prefers-reduced-motion: reduce)');
@@ -17,21 +18,29 @@ function controls(){index=Math.round(pages.scrollLeft/Math.max(1,pages.clientWid
 function turn(direction){const target=Math.max(0,Math.min(count-1,index+direction));if(target===index)return;pages.scrollTo({left:target*pages.clientWidth,behavior:motion.matches?'instant':'smooth'});}
 $('previous').onclick=()=>turn(-1);$('next').onclick=()=>turn(1);pages.addEventListener('scroll',controls,{passive:true});pages.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();turn(e.key==='ArrowRight'?1:-1);}});
 let resizeTimer;addEventListener('resize',()=>{const current=index;clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{pages.scrollTo({left:current*pages.clientWidth,behavior:'instant'});controls();},100);});
+async function loadReader(){
 try{const data=await publishedPoems();const poems=data.filter(p=>typeof p.id==='string'&&typeof p.body==='string'&&p.published===true);let saved;try{saved=JSON.parse(sessionStorage.getItem('poetry-order'));}catch{}const order=readingOrder(poems,saved);try{sessionStorage.setItem('poetry-order',JSON.stringify(order));}catch{}count=order.length;for(const id of order){const poem=poems.find(p=>p.id===id),page=document.createElement('article'),content=document.createElement('div'),title=document.createElement('h1'),body=document.createElement('div');page.className='page';content.className='page-content';title.textContent=poem.title||'Untitled';body.className='poem';renderPoem(body,poem.body,poem.layout);const venues=Array.isArray(poem.publications)?[...new Set(poem.publications.filter(v=>typeof v==='string'&&v.trim()).map(v=>v.trim()))]:[];if(venues.length){const credit=document.createElement('p');credit.className='publication-credit';credit.textContent='Published in '+venues.join(', ');content.append(credit);}content.append(title,body);if(poem.author){const author=document.createElement('p');author.className='byline';author.textContent=poem.author;content.append(author);}page.append(content);pages.append(page);}if(count){pages.hidden=false;$('reader-footer').hidden=false;}if(!count){pages.hidden=true;$('empty').hidden=false;$('reader-footer').hidden=true;}controls();}catch{pages.hidden=true;$('empty').hidden=false;$('reader-footer').hidden=true;$('empty-message').textContent='The collection couldn’t be loaded. Please try again later.';}
-dispatchEvent(new Event('site-ready'));
-const key='verse-web-drafts-v1';let drafts=[];try{drafts=configured?[]:JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(drafts))drafts=[];}catch{}let revisions={},submissions=[],saveQueue=Promise.resolve();
+if(!['write','review'].includes(location.hash.slice(1)))dispatchEvent(new Event('site-ready'));
+}
+loadReader();
+const key='verse-web-drafts-v1';let drafts=[];try{drafts=configured?[]:JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(drafts))drafts=[];}catch{}let revisions={},submissions=[];
 try{await acceptSignInLink();const studio=await loadStudio();drafts=studio.drafts;submissions=studio.submissions;revisions=studio.revisions;permissions=studio.permissions||{editPoems:true,manageSubmissions:true,comment:false};backendReady=true;}catch(error){$('save-state').textContent=configured?error.message:'Studio unavailable — export a copy';}
 active=drafts[0]?.id;
-function persist(){
+const draftSaves=createSaveQueue(async()=>{
+ const snapshot=JSON.parse(JSON.stringify(drafts));
+ if(!configured)localStorage.setItem(key,JSON.stringify(snapshot));
+ revisions.drafts=await saveCollection('drafts',snapshot,revisions.drafts);
+},{onState:(state,error)=>{$('save-state').textContent=state==='error'?error.message:state==='saved'?(configured?'Saved to your online studio':'Saved on this Mac'):'Saving…';}});
+addEventListener('beforeunload',event=>{if(draftSaves.pending()||submissionSaves.pending()){event.preventDefault();event.returnValue='';}});
+addEventListener('pagehide',()=>{draftSaves.flush();submissionSaves.flush();});
+function persist(immediate=true){
  if(!permissions.editPoems)return Promise.resolve(false);
- if(!configured)try{localStorage.setItem(key,JSON.stringify(drafts));}catch{}
- if(!backendReady){$('save-state').textContent='Studio offline — export a copy';return;}
- const snapshot=JSON.parse(JSON.stringify(drafts));$('save-state').textContent='Saving…';
- return saveQueue=saveQueue.catch(()=>{}).then(async()=>{revisions.drafts=await saveCollection('drafts',snapshot,revisions.drafts);$('save-state').textContent=configured?'Saved to your online studio':'Saved on this Mac';return true;}).catch(error=>{$('save-state').textContent=error.message;return false;});
+ if(!backendReady){$('save-state').textContent='Studio offline — export a copy';return Promise.resolve(false);}
+ return draftSaves.save({immediate});
 }
 function list(){const root=$('draft-list');root.replaceChildren();for(const draft of drafts){const button=document.createElement('button');button.textContent=draft.title||'Untitled';button.setAttribute('aria-current',String(draft.id===active));button.onclick=()=>openDraft(draft.id);root.append(button);}}
 function openDraft(id){if(!drafts.length&&!permissions.editPoems)return;if(!drafts.length){drafts.push({id:crypto.randomUUID(),title:'',body:'',versions:[]});persist();}const draft=drafts.find(d=>d.id===id)||drafts[0];active=draft.id;$('draft-title').value=draft.title;$('draft-body').value=draft.body;list();history();renderDraftSubmissions();syncShape();$('analysis-result').replaceChildren();commentAnchor='';$('comment-selection').textContent='';$('comment-body').value='';renderComments();applyPermissions();}
-function save(){if(!permissions.editPoems)return;const draft=drafts.find(d=>d.id===active);if(!draft)return;draft.title=$('draft-title').value;draft.body=$('draft-body').value;if($('analysis-result').textContent)$('analysis-result').textContent='Poem changed. Analyze again to update estimates.';sizeEditor();persist();list();}
+function save(event){if(!permissions.editPoems)return;const draft=drafts.find(d=>d.id===active);if(!draft)return;draft.title=$('draft-title').value;draft.body=$('draft-body').value;if($('analysis-result').textContent)$('analysis-result').textContent='Poem changed. Analyze again to update estimates.';sizeEditor();persist(false);if(!event||event.target===$('draft-title'))list();}
 $('draft-title').addEventListener('input',save);$('draft-body').addEventListener('input',save);
 function sizeEditor(){const editor=$('draft-body');if(!editor||$('write-view').hidden)return;const y=scrollY;editor.style.height='0px';editor.style.height=Math.max(180,editor.scrollHeight+2)+'px';if(scrollY!==y)scrollTo({top:y,behavior:'instant'});}
 let editorWidth=0;new ResizeObserver(entries=>{const width=entries[0].contentRect.width;if(width!==editorWidth){editorWidth=width;sizeEditor();}}).observe($('draft-body'));
@@ -47,7 +56,7 @@ $('new-draft').onclick=()=>{if(!permissions.editPoems)return;const draft={id:cry
 $('keep-draft').onclick=()=>{if(!permissions.editPoems)return;save();const draft=drafts.find(d=>d.id===active);draft.versions.unshift({date:new Date().toISOString(),title:draft.title,body:draft.body,layout:structuredClone(draft.layout||{})});persist();history();};
 $('show-history').onclick=()=>{$('history').hidden=!$('history').hidden;$('show-history').setAttribute('aria-expanded',String(!$('history').hidden));};
 function history(){const root=$('history');root.replaceChildren();const versions=drafts.find(d=>d.id===active)?.versions||[];if(!versions.length){root.textContent='No saved versions yet.';return;}for(const version of versions){const item=document.createElement('details'),summary=document.createElement('summary'),text=document.createElement('pre');item.className='history-item';summary.textContent=new Date(version.date).toLocaleString();text.textContent=version.title+'\n\n'+version.body;item.append(summary,text);root.append(item);}}
-$('export-draft').onclick=()=>{save();const draft=drafts.find(d=>d.id===active),url=URL.createObjectURL(new Blob([draft.title+'\n\n'+draft.body],{type:'text/plain;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=(draft.title||'Untitled').replace(/[^a-z0-9 _-]/gi,'').slice(0,100)+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+$('export-draft').onclick=()=>{save();draftSaves.flush();const draft=drafts.find(d=>d.id===active),url=URL.createObjectURL(new Blob([draft.title+'\n\n'+draft.body],{type:'text/plain;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=(draft.title||'Untitled').replace(/[^a-z0-9 _-]/gi,'').slice(0,100)+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 function renderReview(){
  const root=$('publication-list'),select=$('submission-poem');root.replaceChildren();select.replaceChildren();
  if(!drafts.length)root.textContent='Create a poem in Write to get started.';
@@ -108,14 +117,27 @@ function submissionRow(record){
  return row;
 
 }
-let submissionQueue=Promise.resolve();
+const submissionSaves=createSaveQueue(async()=>{const snapshot=JSON.parse(JSON.stringify(submissions));revisions.submissions=await saveCollection('submissions',snapshot,revisions.submissions);},{onState:(state,error)=>submissionSaveState(state==='error'?error.message:state==='saved'?(configured?'Saved to your online studio':'Saved on this Mac'):'Saving…')});
 function submissionSaveState(message){$('review-state').textContent=message;$('draft-submission-state').textContent=message;}
-function saveSubmissions(){if(!permissions.manageSubmissions)return Promise.resolve();const snapshot=JSON.parse(JSON.stringify(submissions));submissionSaveState('Saving…');return submissionQueue=submissionQueue.catch(()=>{}).then(async()=>{revisions.submissions=await saveCollection('submissions',snapshot,revisions.submissions);submissionSaveState(configured?'Saved to your online studio':'Saved on this Mac');}).catch(error=>{submissionSaveState(error.message);});}
-$('submission-form').onsubmit=async event=>{event.preventDefault();if(!backendReady||!permissions.manageSubmissions)return;submissions.push({id:crypto.randomUUID(),poemId:$('submission-poem').value,...submissionVenue(''),magazine:$('magazine').value.trim(),sent:$('sent').value,submitBy:$('submit-by').value,response:'',status:'submitted',notes:''});await saveSubmissions();await rememberVenue($('magazine').value,$('venue-url').value,$('venue-format').value);$('magazine').value='';$('submit-by').value='';$('venue-url').value='';$('venue-format').value='';renderReview();};
+function saveSubmissions(){if(!permissions.manageSubmissions||!backendReady)return Promise.resolve(false);return submissionSaves.save({immediate:true});}
+const pendingSubmissionForms=new Map();
+async function addSubmission(event,prefix,poemId,render){
+ event.preventDefault();if(!backendReady||!permissions.manageSubmissions||!poemId)return;
+ const form=event.currentTarget;if(form.dataset.saving)return;form.dataset.saving='true';
+ const fields=['magazine','sent','submit-by','venue-url','venue-format'];const values=Object.fromEntries(fields.map(key=>[key,$(prefix+key).value]));
+ const pendingKey=prefix+':'+poemId;let record=pendingSubmissionForms.get(pendingKey);if(!record){record={id:crypto.randomUUID(),response:'',status:'submitted',notes:''};submissions.push(record);pendingSubmissionForms.set(pendingKey,record);}
+ Object.assign(record,{poemId,...submissionVenue(prefix),magazine:values.magazine.trim(),sent:values.sent,submitBy:values['submit-by']});
+ try{const saved=await saveSubmissions();if(!saved){render();return;}pendingSubmissionForms.delete(pendingKey);
+ await rememberVenue(record.magazine,record.submitUrl,record.format);
+ for(const key of ['magazine','submit-by','venue-url','venue-format'])if($(prefix+key).value===values[key])$(prefix+key).value='';
+ render();}finally{delete form.dataset.saving;}
+}
+$('submission-form').onsubmit=event=>addSubmission(event,'',$('submission-poem').value,renderReview);
 $('studio-note').textContent=configured?'Your private online workspace. Choose what to publish in Review.':'Drafts are saved on this Mac. Keep versions as you work, then choose what to publish in Review.';
 $('studio-login-form').onsubmit=async e=>{e.preventDefault();$('studio-send').disabled=true;try{await signIn($('studio-email').value.trim(),new URL('./',location.href).href);$('studio-login-state').textContent='Open the sign-in email on this device.';}catch(error){$('studio-login-state').textContent=error.message;}finally{$('studio-send').disabled=false;}};
 $('studio-sign-out').hidden=!configured||!backendReady;$('studio-sign-out').onclick=()=>{signOut();location.reload();};
 route();
+if(['write','review'].includes(location.hash.slice(1)))dispatchEvent(new Event('site-ready'));
 
 function applyPermissions(){
  const canEdit=backendReady&&permissions.editPoems,canManage=backendReady&&permissions.manageSubmissions;
@@ -127,7 +149,7 @@ function applyPermissions(){
  if(backendReady&&!canEdit)$('studio-note').textContent='Editorial access: read poems, leave comments, and manage submissions. Poem text and publication choices are read-only.';
 }
 $('export-pdf').onclick=async()=>{const draft=drafts.find(d=>d.id===active);if(!draft)return;try{await exportPoemPDF({...draft,publications:[...new Set(submissions.filter(s=>s.poemId===active&&s.status==='accepted').map(s=>s.magazine).filter(Boolean))]});}catch(error){$('save-state').textContent=error.message;}};
-$('draft-submission-form').onsubmit=async event=>{event.preventDefault();if(!backendReady||!permissions.manageSubmissions||!active)return;submissions.push({id:crypto.randomUUID(),poemId:active,...submissionVenue('draft-'),magazine:$('draft-magazine').value.trim(),sent:$('draft-sent').value,submitBy:$('draft-submit-by').value,response:'',status:'submitted',notes:''});await saveSubmissions();await rememberVenue($('draft-magazine').value,$('draft-venue-url').value,$('draft-venue-format').value);$('draft-magazine').value='';$('draft-submit-by').value='';$('draft-venue-url').value='';$('draft-venue-format').value='';renderDraftSubmissions();};
+$('draft-submission-form').onsubmit=event=>addSubmission(event,'draft-',active,renderDraftSubmissions);
 $('comment-anchor').onclick=()=>{const editor=$('draft-body');commentAnchor=editor.value.slice(editor.selectionStart,editor.selectionEnd).slice(0,300);$('comment-selection').textContent=commentAnchor?'Selected: '+commentAnchor:'No words selected — this will be a general comment.';};
 async function renderComments(){
  const request=++commentRequest,poemId=active,root=$('comments-list');root.replaceChildren();

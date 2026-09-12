@@ -19,12 +19,14 @@ export function setCamera(camera,scale,width,height){
  camera.dataset.scale=String(scale);
 }
 
+export function menuSkyY(height,scale){return height/2-Math.min(height*.4,240*scale);}
+
 // Expanded labels must fit both the viewport and the actual curved aperture.
 // Require extra clearance to reopen, preventing toggles at a fractional edge.
-export function menuFitsMirror({width,height,scale,rowWidth,rowHeight,collapsed=false},inside){
+export function menuFitsMirror({width,height,scale,rowWidth,rowHeight,collapsed=false,centerY=menuSkyY(height,scale)},inside){
  const margin=collapsed?18:8;
  const left=width/2-rowWidth/2-margin,right=width/2+rowWidth/2+margin;
- const top=height*.42-rowHeight/2-margin,bottom=height*.42+rowHeight/2+margin;
+ const top=centerY-rowHeight/2-margin,bottom=centerY+rowHeight/2+margin;
  if(left<12||right>width-12||top<12||bottom>height-12)return false;
  const point=(x,y)=>inside(MIRROR.x+(x-width/2)/scale,MIRROR.y+(y-height/2)/scale);
  for(let i=0;i<=8;i++){const t=i/8;

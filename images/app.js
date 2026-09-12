@@ -1,5 +1,5 @@
-import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut,listCollection,setPhotoFeatured,removePhoto} from '../shared/connection.js?v=a8d72114f8c7';
-import {DISPLAY_MS,choosePhoto,frameSize,photoPosition} from './gallery.js?v=a8d72114f8c7';
+import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut,listCollection,setPhotoFeatured,removePhoto} from '../shared/connection.js?v=c22e598a6f7d';
+import {DISPLAY_MS,choosePhoto,frameSize,photoPosition} from './gallery.js?v=c22e598a6f7d';
 const $=id=>document.getElementById(id);let photos=[],current=0,timer=null,showing=null,generation=0,previewUrl=null,galleryRequest=0,selectionGeneration=0,uploading=false,uploadQueue=[],collectionRequest=0;
 const inCollection=()=>['#upload','#collection'].includes(location.hash);
 $('menu-button').onclick=()=>{$('menu').hidden=!$('menu').hidden;$('menu-button').setAttribute('aria-expanded',String(!$('menu').hidden));};
@@ -21,6 +21,9 @@ async function prepareNext(){
  nextSide=makeSide(item,'next');nextSide.element.style.opacity='1';
  if(!reducedMotion())animate(nextSide.element,[{opacity:0},{opacity:1}],{duration:DISPLAY_MS,easing:'linear'});
 }
+function showEmptyGallery(){
+ generation++;showing=null;current=0;clearMotion();$('frame').hidden=true;$('empty').hidden=false;$('empty').textContent='No photographs yet.';
+}
 function schedule(){
  clearTimeout(timer);if(document.hidden||inCollection())return;
  prepareNext();
@@ -30,7 +33,7 @@ function schedule(){
   try{const next=await listPhotos();if(request!==galleryRequest||document.hidden||inCollection())return;photos=next;}catch{}
   if(request!==galleryRequest||document.hidden||inCollection())return;
   if(photos.length>1){const queued=photos.findIndex(item=>item.id===queuedId&&item.id!==showing?.id);show(queued>=0?queued:choosePhoto(photos,showing?.id));}
-  else if(photos.length===1&&photos[0].id!==showing?.id)show(0);else schedule();
+  else if(photos.length===1&&photos[0].id!==showing?.id)show(0);else{if(!photos.length)showEmptyGallery();schedule();}
  },DISPLAY_MS);
 }
 async function show(index){
@@ -51,10 +54,11 @@ async function show(index){
  }
  schedule();
 }
-async function loadGallery(){const request=++galleryRequest;if(!showing){$('empty').textContent='Loading photographs…';$('empty').hidden=false;}try{const next=await listPhotos();if(request!==galleryRequest)return;photos=next;if(photos.length){const retained=photos.findIndex(p=>p.id===showing?.id);await show(retained>=0?retained:choosePhoto(photos,null));}else{$('frame').hidden=true;$('empty').hidden=false;$('empty').textContent='No photographs yet.';schedule();}}catch{if(request===galleryRequest){$('empty').textContent='The gallery couldn’t be loaded. Please try again.';schedule();}}}
+async function loadGallery(){const request=++galleryRequest;if(!showing){$('empty').textContent='Loading photographs…';$('empty').hidden=false;}try{const next=await listPhotos();if(request!==galleryRequest)return;photos=next;if(photos.length){const retained=photos.findIndex(p=>p.id===showing?.id);await show(retained>=0?retained:choosePhoto(photos,null));}else{showEmptyGallery();schedule();}}catch{if(request===galleryRequest){$('empty').textContent='The gallery couldn’t be loaded. Please try again.';schedule();}}}
 async function route(){galleryRequest++;generation++;collectionRequest++;const upload=inCollection();$('upload').hidden=!upload;$('gallery').hidden=upload;$('menu').hidden=true;$('menu-button').setAttribute('aria-expanded','false');clearTimeout(timer);clearMotion();if(!upload)await loadGallery();else if(await showLogin())await loadCollection();}
-addEventListener('pagehide',()=>{clearTimeout(timer);clearMotion();galleryRequest++;generation++;collectionRequest++;});addEventListener('pageshow',event=>{if(event.persisted)schedule();});
-addEventListener('hashchange',route);addEventListener('resize',resize);document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(timer);clearMotion();generation++;}else if(!inCollection()&&!showing&&photos.length)show(choosePhoto(photos,null));else schedule();});
+function resumeGallery(){if(inCollection()||document.hidden)return;if(showing)schedule();else if(photos.length)show(choosePhoto(photos,null));else loadGallery();}
+addEventListener('pagehide',()=>{clearTimeout(timer);clearMotion();galleryRequest++;generation++;collectionRequest++;});addEventListener('pageshow',event=>{if(event.persisted)resumeGallery();});
+addEventListener('hashchange',route);addEventListener('resize',resize);document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(timer);clearMotion();generation++;galleryRequest++;}else resumeGallery();});
 function renderUploadQueue(){
  const list=$('upload-queue');list.replaceChildren();
  for(const item of uploadQueue){const row=document.createElement('li'),name=document.createElement('span'),state=document.createElement('span');name.textContent=item.file.name;state.className='queue-state';state.textContent=item.error||({ready:'Ready',preparing:'Preparing…',uploading:configured?'Publishing…':'Saving…',done:configured?'Published':'Saved on this Mac',failed:'Couldn’t save',invalid:'Not supported'}[item.state]);row.append(name,state);list.append(row);}
@@ -116,7 +120,22 @@ async function loadCollection(){
  }catch(error){if(request===collectionRequest){$('collection-grid').replaceChildren();$('collection-status').textContent=error.message||'Couldn’t load the collection. Open Collection again to retry.';}}
 }
 
-async function showLogin(){clearCollection();const ownRequest=collectionRequest;const loggedIn=!configured||Boolean(await accessToken());if(ownRequest!==collectionRequest||!inCollection())return false;$('login').hidden=loggedIn;$('sign-out').hidden=!configured||!loggedIn;$('upload-controls').hidden=!loggedIn;$('storage-note').textContent=configured?'Publish an optimized copy to the gallery. Keep the original in your photo library.':'Local preview: photographs are saved on this Mac. Online publishing is not connected yet.';renderUploadQueue();return loggedIn;}
+async function showLogin(){
+ clearCollection();const ownRequest=collectionRequest;$('upload-controls').hidden=true;
+ let loggedIn;
+ try{loggedIn=!configured||Boolean(await accessToken());}
+ catch(error){
+  if(ownRequest!==collectionRequest||!inCollection())return false;
+  $('login').hidden=false;$('sign-out').hidden=!configured;
+  $('login-status').textContent=(error.message||'Sign-in could not be checked.')+' ';
+  const retry=document.createElement('button');retry.type='button';retry.textContent='Retry';retry.onclick=async()=>{retry.disabled=true;if(await showLogin())await loadCollection();};$('login-status').append(retry);
+  return false;
+ }
+ if(ownRequest!==collectionRequest||!inCollection())return false;
+ $('login').hidden=loggedIn;$('sign-out').hidden=!configured||!loggedIn;$('upload-controls').hidden=!loggedIn;
+ if(loggedIn)$('login-status').textContent='';
+ $('storage-note').textContent=configured?'Publish an optimized copy to the gallery. Keep the original in your photo library.':'Local preview: photographs are saved on this Mac. Online publishing is not connected yet.';renderUploadQueue();return loggedIn;
+}
 $('login-form').onsubmit=async event=>{event.preventDefault();const button=$('send-code');button.disabled=true;try{await signIn($('email').value.trim());$('login-status').textContent='Check your email and open the sign-in link on this device.';}catch(error){$('login-status').textContent=error.message;}finally{button.disabled=false;}};
 $('sign-out').onclick=async()=>{if(uploading)return;clearCollection();signOut();await showLogin();};
 $('upload-form').onsubmit=async event=>{
