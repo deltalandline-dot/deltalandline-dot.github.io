@@ -7,32 +7,38 @@ if(address.searchParams.has('__site')){address.searchParams.delete('__site');his
 const isHome=()=>['/','/index.html'].includes(location.pathname);
 const styles=document.createElement('style');
 styles.textContent=`
-.site-curtain{position:fixed;inset:0;background:#111110;z-index:10000;pointer-events:auto;opacity:0}
+.site-curtain{position:fixed;inset:0;background:#f5f4ef;z-index:10000;pointer-events:auto;opacity:0}
 .site-selected{position:fixed!important;z-index:10001!important;pointer-events:none!important;color:#ff3028!important;mix-blend-mode:normal!important;background:transparent!important;margin:0!important;outline:none!important;transition:none!important;transform-origin:top left!important}
-html.site-arriving::after{content:'';position:fixed;inset:0;background:#111110;z-index:10002;pointer-events:auto}
+html.site-arriving::after{content:'';position:fixed;inset:0;background:#f5f4ef;z-index:10002;pointer-events:auto}
 html.site-arriving.site-reveal::after{animation:site-reveal .48s ease-out forwards}
 @keyframes site-reveal{to{opacity:0}}
 @media(prefers-reduced-motion:reduce){html.site-arriving::after{display:none}}
 `;
 document.head.append(styles);
-function clean(){document.querySelectorAll('.site-curtain,.site-selected').forEach(el=>el.remove());document.documentElement.classList.remove('site-arriving','site-reveal');navigating=false;}
+function clean(){document.querySelectorAll('.site-curtain,.site-selected').forEach(el=>el.remove());document.documentElement.classList.remove('site-arriving','site-reveal','mountain-exit');document.querySelectorAll('#world,.navigation button,.mountain-layer,#mirror-paper,#landscape-original').forEach(el=>el.getAnimations().forEach(a=>a.cancel()));const original=document.getElementById('landscape-original');if(original)original.style.visibility='';document.getElementById('mountain-layers')?.setAttribute('visibility','hidden');navigating=false;}
 async function animate(el,frames,duration){try{await el.animate(frames,{duration,easing:'ease-in-out',fill:'forwards'}).finished;}catch{}}
-function selectedLabel(control){
- if(!control)return null;
- const rect=control.getBoundingClientRect(),computed=getComputedStyle(control),copy=control.cloneNode(true);
- for(const key of computed)copy.style.setProperty(key,computed.getPropertyValue(key));
- copy.removeAttribute('id');copy.className='site-selected';copy.setAttribute('aria-hidden','true');copy.inert=true;
- Object.assign(copy.style,{left:rect.left+'px',top:rect.top+'px',width:control.offsetWidth+'px',height:control.offsetHeight+'px',transform:`scale(${rect.width/control.offsetWidth})`});
- document.body.append(copy);return copy;
+async function mountainExit(){
+ const world=document.getElementById('world');
+ if(!world)return;
+ document.documentElement.classList.add('mountain-exit');
+ // Vector masks approximate three depth regions of the supplied flat photograph.
+ const original=document.getElementById('landscape-original');
+ document.getElementById('mountain-layers').setAttribute('visibility','visible');
+ const start=getComputedStyle(world).transform;
+ const target=Math.max(Math.max(innerWidth/538,innerHeight/749)*2.5,new DOMMatrix(start).a*1.25);
+ const motions=[animate(original,[{opacity:1},{opacity:0}],480),animate(world,[{transform:start},{transform:`translate(${-1517*target}px,${-837.5*target}px) scale(${target})`}],1450)];
+ document.querySelectorAll('.navigation button').forEach(el=>motions.push(animate(el,[{opacity:1},{opacity:0}],260)));
+ document.querySelectorAll('.mountain-layer').forEach((el,i)=>motions.push(animate(el,[{transform:'translateY(0)'},{transform:`translateY(${[2200,3200,4400][i]}px)`}],1450)));
+ motions.push(animate(document.getElementById('mirror-paper'),[{fill:'#ebebeb'},{fill:'#f5f4ef'}],1450));
+ await Promise.all(motions);
 }
 export async function navigateWithDoors(destination,control){
  if(navigating)return;navigating=true;
  const target=new URL(destination,location.href);if(release)target.searchParams.set('__site',release);
  if(!reduced.matches){
-  const label=isHome()?selectedLabel(control):null;
+  if(isHome())await mountainExit();
   const curtain=document.createElement('div');curtain.className='site-curtain';curtain.setAttribute('aria-hidden','true');document.body.append(curtain);
-  await animate(curtain,[{opacity:0},{opacity:1}],420);
-  if(label)await animate(label,[{opacity:1},{opacity:0}],240);
+  await animate(curtain,[{opacity:0},{opacity:1}],isHome()?120:420);
   try{sessionStorage.setItem('site-arrival',JSON.stringify({path:target.pathname,time:Date.now()}));}catch{}
  }
  location.assign(target.href);

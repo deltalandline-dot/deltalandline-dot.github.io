@@ -1,6 +1,6 @@
-import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=1e601bdcde1c';
-import {publishedPoems,loadStudio,saveCollection} from '../shared/poetry-store.js?v=1e601bdcde1c';
-import {readingOrder} from './order.js?v=1e601bdcde1c';
+import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=d8ab3b08e421';
+import {publishedPoems,loadStudio,saveCollection} from '../shared/poetry-store.js?v=d8ab3b08e421';
+import {readingOrder} from './order.js?v=d8ab3b08e421';
 let backendReady=false,active;
 const $=id=>document.getElementById(id),motion=matchMedia('(prefers-reduced-motion: reduce)');
 const menu=$('studio-menu');$('studio-toggle').onclick=()=>{menu.hidden=!menu.hidden;$('studio-toggle').setAttribute('aria-expanded',String(!menu.hidden));};
