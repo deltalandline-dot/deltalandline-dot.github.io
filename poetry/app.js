@@ -1,6 +1,6 @@
-import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=cdd4ef71c903';
-import {publishedPoems,loadStudio,saveCollection} from '../shared/poetry-store.js?v=cdd4ef71c903';
-import {readingOrder} from './order.js?v=cdd4ef71c903';
+import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=6b345c65a25c';
+import {publishedPoems,loadStudio,saveCollection} from '../shared/poetry-store.js?v=6b345c65a25c';
+import {readingOrder} from './order.js?v=6b345c65a25c';
 let backendReady=false,active;
 const $=id=>document.getElementById(id),motion=matchMedia('(prefers-reduced-motion: reduce)');
 const menu=$('studio-menu');$('studio-toggle').onclick=()=>{menu.hidden=!menu.hidden;$('studio-toggle').setAttribute('aria-expanded',String(!menu.hidden));};
@@ -40,8 +40,31 @@ function renderReview(){
  }
  const records=$('submissions');records.replaceChildren();
  if(!submissions.length)records.textContent='No submissions yet.';
- for(const record of submissions){const row=document.createElement('div'),title=document.createElement('strong'),status=document.createElement('select'),response=document.createElement('input'),notes=document.createElement('textarea');row.className='submission-record';title.textContent=(drafts.find(d=>d.id===record.poemId)?.title||'Untitled')+' / '+record.magazine+' / sent '+record.sent;
- for(const value of ['submitted','accepted','rejected','withdrawn']){const option=document.createElement('option');option.value=value;option.textContent=value;status.append(option);}status.value=record.status;status.setAttribute('aria-label','Submission status');response.type='date';response.value=record.response||'';response.setAttribute('aria-label','Response date');notes.value=record.notes||'';notes.placeholder='Notes';notes.setAttribute('aria-label','Submission notes');status.onchange=()=>{record.status=status.value;saveSubmissions();};response.onchange=()=>{record.response=response.value;saveSubmissions();};notes.onchange=()=>{record.notes=notes.value;saveSubmissions();};row.append(title,status,response,notes);records.append(row);}
+ for(const record of submissions)records.append(submissionRow(record));
+}
+function submissionRow(record){
+ const row=document.createElement('div'),title=document.createElement('strong'),status=document.createElement('select'),response=document.createElement('input'),notes=document.createElement('textarea');
+ row.className='submission-record';
+ const piece=drafts.find(d=>d.id===record.poemId)?.title||record.pieceTitle||'Piece not specified';
+ title.textContent=piece+' / '+(record.magazine||'Venue not specified')+' / '+(record.sent?'sent '+record.sent:'date not recorded');
+ const statuses=['planned','on hold','submitted','accepted','rejected','withdrawn','closed'];
+ // Keep unfamiliar imported values visible without assigning an outcome.
+ if(!statuses.includes(record.status)){const option=document.createElement('option');option.value=record.status||'';option.textContent=record.status||'Status not recorded';status.append(option);}
+ for(const value of statuses){const option=document.createElement('option');option.value=value;option.textContent=value;status.append(option);}
+ status.value=record.status||'';status.setAttribute('aria-label','Submission status');
+ response.type='date';response.value=record.response||'';response.setAttribute('aria-label','Response date');
+ notes.value=record.notes||'';notes.placeholder='Notes';notes.setAttribute('aria-label','Submission notes');
+ status.onchange=()=>{record.status=status.value;saveSubmissions();};response.onchange=()=>{record.response=response.value;saveSubmissions();};notes.onchange=()=>{record.notes=notes.value;saveSubmissions();};
+ row.append(title,status,response,notes);
+ const fields=[['Submitted by',record.submittedBy],['Format',record.format],['Submission address',record.submitUrl],['Paid (source)',record.paid],['Status (source)',record.sourceStatus],['Accepted (source)',record.sourceAccepted],['Sheet row',record.sourceRow],['Source sheet',record.sourceSheet]];
+ const present=fields.filter(([,value])=>value!==undefined&&value!==null&&String(value).trim()!=='');
+ if(present.length){
+  const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Imported details';details.append(summary);
+  for(const [label,value] of present){const item=document.createElement('p');item.textContent=label+': '+String(value);details.append(item);}
+  row.append(details);
+ }
+ return row;
+
 }
 let submissionQueue=Promise.resolve();
 function saveSubmissions(){const snapshot=JSON.parse(JSON.stringify(submissions));$('review-state').textContent='Saving…';return submissionQueue=submissionQueue.catch(()=>{}).then(async()=>{revisions.submissions=await saveCollection('submissions',snapshot,revisions.submissions);$('review-state').textContent=configured?'Saved to your online studio':'Saved on this Mac';}).catch(error=>{$('review-state').textContent=error.message;});}
