@@ -29,3 +29,8 @@ html[data-theme] body:has(#menu-button) .theme-toggle{top:calc(20px + env(safe-a
  html[data-theme] body:has(#studio-toggle)>header{padding-top:calc(20px + env(safe-area-inset-top))}
  html[data-theme] .theme-toggle,html[data-theme] body:has(#menu-button) .theme-toggle{top:calc(18px + env(safe-area-inset-top))}
 }
+
+/* Touch targets remain usable beside the theme control on narrow screens. */
+@media(max-width:600px){
+ html[data-theme] body>header>a,html[data-theme] body>header>button{min-width:44px;min-height:44px}
+}

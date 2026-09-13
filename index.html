@@ -77,6 +77,11 @@ html[data-theme] body:has(#menu-button) .theme-toggle{top:calc(20px + env(safe-a
  html[data-theme] body:has(#studio-toggle)>header{padding-top:calc(20px + env(safe-area-inset-top))}
  html[data-theme] .theme-toggle,html[data-theme] body:has(#menu-button) .theme-toggle{top:calc(18px + env(safe-area-inset-top))}
 }
+
+/* Touch targets remain usable beside the theme control on narrow screens. */
+@media(max-width:600px){
+ html[data-theme] body>header>a,html[data-theme] body>header>button{min-width:44px;min-height:44px}
+}
 </style><style>html.site-arriving::after{content:'';position:fixed;inset:0;background:#f5f4ef;z-index:10002}html.site-arriving{background:#f5f4ef}</style><script>try{const a=JSON.parse(sessionStorage.getItem('site-arrival'));sessionStorage.removeItem('site-arrival');if(a&&a.path===location.pathname&&Date.now()-a.time<15000&&!matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.classList.add('site-arriving');setTimeout(()=>document.documentElement.classList.remove('site-arriving'),5000);}}catch{}</script>
 <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin><style>/* Switzer */
 @font-face {
@@ -141,7 +146,7 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 @media(prefers-reduced-motion:reduce){.navigation .menu-mark-red{transition:none!important}}
 .navigation .mark-hover{display:none}.navigation:has(.menu-toggle:hover,.menu-toggle:focus-visible) .mark-default{display:none}.navigation:has(.menu-toggle:hover,.menu-toggle:focus-visible) .mark-hover{display:inline}
 </style>
-<script type="module" blocking="render" src="./shared/transitions.js?v=59d803ba5f55"></script><link rel="modulepreload" href="shared/transitions.js?v=59d803ba5f55"><link rel="modulepreload" href="shared/zoom.js?v=59d803ba5f55"></head>
+<script type="module" blocking="render" src="./shared/transitions.js?v=d113b4a25cc4"></script><link rel="modulepreload" href="shared/transitions.js?v=d113b4a25cc4"><link rel="modulepreload" href="shared/zoom.js?v=d113b4a25cc4"></head>
 <body>
 
 <div class="viewport">
@@ -174,7 +179,7 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 <button class="menu-item" type="button" aria-label="MUSIC" style="--row:4"><span aria-hidden="true">M</span><span aria-hidden="true">U</span><span aria-hidden="true">S</span><span aria-hidden="true">I</span><span aria-hidden="true">C</span></button>
 </div></nav></main>
 <script type="module">
-import {zoomState,setCamera,menuFitsMirror,menuSkyY} from './shared/zoom.js?v=59d803ba5f55';
+import {zoomState,setCamera,menuFitsMirror,menuSkyY} from './shared/zoom.js?v=d113b4a25cc4';
 const camera=document.getElementById('camera'),landscape=document.getElementById('landscape'),journey=document.getElementById('journey');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');const clamp=x=>Math.max(0,Math.min(1,x));const ease=x=>x*x*(3-2*x);let scheduled=false;
 const mask=document.querySelector('#mirror path'),portrait=document.getElementById('portrait');
@@ -205,7 +210,15 @@ function showMenu(){
 toggle.addEventListener('click',()=>{menuOpen=!menuOpen;showMenu();});
 navigation.addEventListener('keydown',event=>{if(event.key==='Escape'&&menuOpen){event.preventDefault();menuOpen=false;showMenu();toggle.focus();}});
 let fit=1,width=0,height=0,scrollRange=1,lastState;
-function measure(){measureMenu();width=viewport.clientWidth;height=viewport.clientHeight;scrollRange=Math.max(1,journey.scrollHeight-journey.clientHeight);fit=fitMirror(width,height);lastState=null;schedule();}
+function measure(){
+ // Keep the same camera progress when browser chrome or orientation changes the
+ // scroll range. The last rendered progress survives native scrollTop clamping.
+ const progress=lastState?.progress;
+ measureMenu();width=viewport.clientWidth;height=viewport.clientHeight;
+ scrollRange=Math.max(1,journey.scrollHeight-journey.clientHeight);
+ if(progress!==undefined)journey.scrollTop=progress*scrollRange;
+ fit=fitMirror(width,height);lastState=null;schedule();
+}
 function fitMirror(w,h){let scale=Math.max(w/538,h/749);while(![-1,1].every(x=>[-1,1].every(y=>inside(1517+x*w/(2*scale),837.5+y*h/(2*scale)))))scale*=1.025;return scale*1.025;}
 
 function render(){
@@ -223,7 +236,7 @@ function render(){
   if(!collapsed&&focusedToggle)menuItems[0].focus();
  }
  if(!lastState||state.innerScale!==lastState.innerScale)landscape.setAttribute('transform',`translate(1517 837.5) scale(${state.innerScale}) translate(-1517 -837.5)`);
- lastState=state;
+ lastState={...state,progress:p};
  // The aperture and portrait always share the same camera transform.
  // At the handoff all four viewport corners are still inside the aperture.
 

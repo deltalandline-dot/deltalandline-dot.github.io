@@ -1,20 +1,28 @@
-import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut,listCollection,setPhotoFeatured,removePhoto} from '../shared/connection.js?v=59d803ba5f55';
-import {DISPLAY_MS,choosePhoto,frameSize,photoPosition} from './gallery.js?v=59d803ba5f55';
+import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut,listCollection,setPhotoFeatured,removePhoto} from '../shared/connection.js?v=d113b4a25cc4';
+import {DISPLAY_MS,choosePhoto,frameSize,photoPosition} from './gallery.js?v=d113b4a25cc4';
 const $=id=>document.getElementById(id);let photos=[],current=0,timer=null,showing=null,generation=0,previewUrl=null,galleryRequest=0,selectionGeneration=0,uploading=false,uploadQueue=[],collectionRequest=0;
 const seenPhotos=new Set();
 try{const saved=JSON.parse(sessionStorage.getItem('gallery-seen')||'[]');if(Array.isArray(saved))for(const id of saved)if(typeof id==='string')seenPhotos.add(id);}catch{}
 function rememberPhoto(id){if(seenPhotos.has(id)&&showing?.id!==id)seenPhotos.clear();seenPhotos.add(id);const active=new Set(photos.map(photo=>photo.id));for(const old of seenPhotos)if(!active.has(old))seenPhotos.delete(old);try{sessionStorage.setItem('gallery-seen',JSON.stringify([...seenPhotos]));}catch{}}
 const inCollection=()=>['#upload','#collection'].includes(location.hash);
 $('menu-button').onclick=()=>{$('menu').hidden=!$('menu').hidden;$('menu-button').setAttribute('aria-expanded',String(!$('menu').hidden));};
-let previousSide=null,nextSide=null,nextPhoto=null,sideGeneration=0,animations=new Set();
+let previousSide=null,nextSide=null,nextPhoto=null,sideGeneration=0,animations=new Set(),pushAnimations=new Set();
 const reducedMotion=()=>globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 function position(item,slot='center',anchor=showing||item){const width=$('gallery').clientWidth||innerWidth,height=$('gallery').clientHeight||innerHeight;return photoPosition(width,height,item.orientation==='portrait',slot,width<=600?24:32,anchor.orientation==='portrait');}
 function place(element,item,slot){const box=position(item,slot);Object.assign(element.style,{left:box.left+'px',top:box.top+'px',width:box.width+'px',height:box.height+'px'});return box;}
 function animate(element,frames,options){const animation=element.animate?.(frames,options);if(!animation)return null;animations.add(animation);animation.finished.catch(()=>{}).finally(()=>animations.delete(animation));return animation;}
 function removeSide(side){side?.element.remove();}
-function clearMotion(){sideGeneration++;for(const animation of animations)animation.cancel();animations.clear();removeSide(previousSide);removeSide(nextSide);previousSide=nextSide=null;nextPhoto=null;}
+function clearMotion(){sideGeneration++;for(const animation of animations)animation.cancel();animations.clear();pushAnimations.clear();removeSide(previousSide);removeSide(nextSide);previousSide=nextSide=null;nextPhoto=null;}
 function makeSide(item,slot){const element=document.createElement('figure'),img=document.createElement('img');element.className='gallery-side';element.setAttribute('aria-hidden','true');img.alt='';img.src=item.url;element.append(img);$('gallery').append(element);place(element,item,slot);return {element,item};}
-function resize(){if(showing)place($('frame'),showing,'center');if(previousSide)place(previousSide.element,previousSide.item,'previous');if(nextSide)place(nextSide.element,nextSide.item,'next');}
+function resize(){
+ // Distances belong to the old viewport. Finish a push before placing photos
+ // into a rotated/resized viewport, preventing stale transforms and overlap.
+ for(const animation of pushAnimations)animation.cancel();
+ pushAnimations.clear();
+ if(showing)place($('frame'),showing,'center');
+ if(previousSide)place(previousSide.element,previousSide.item,'previous');
+ if(nextSide)place(nextSide.element,nextSide.item,'next');
+}
 async function prepareNext(){
  const token=++sideGeneration;removeSide(nextSide);nextSide=null;nextPhoto=null;
  if(photos.length<2||!showing)return;
@@ -50,8 +58,9 @@ async function show(index){
  rememberPhoto(item.id);current=index;showing=item;$('photo').src=loaded.src;$('photo').alt=item.description||'Photograph';resize();$('frame').hidden=false;$('empty').hidden=true;
  if(changed&&!reducedMotion()){
   const options={duration:1600,easing:'cubic-bezier(.22,.61,.36,1)'},center=position(item),distance=incomingBox.left-center.left;
-  animate(previousSide.element,[{transform:`translateX(${oldBox.left-position(oldItem,'previous').left}px)`},{transform:'translateX(0)'}],options);
+  const leaving=animate(previousSide.element,[{transform:`translateX(${oldBox.left-position(oldItem,'previous').left}px)`},{transform:'translateX(0)'}],options);
   const entering=animate($('frame'),[{transform:`translateX(${distance}px)`},{transform:'translateX(0)'}],options);
+  for(const animation of [leaving,entering])if(animation){pushAnimations.add(animation);animation.finished.catch(()=>{}).finally(()=>pushAnimations.delete(animation));}
   if(entering)await entering.finished.catch(()=>{});
   if(token!==generation)return;
  }
