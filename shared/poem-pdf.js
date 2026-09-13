@@ -1,4 +1,4 @@
-import { normalizeLayout, renderPoem } from './poem-format.js?v=d113b4a25cc4';
+import { normalizeLayout, renderPoem } from './poem-format.js?v=b71527aa4e21';
 
 export const PRINT_CSS = `
 @page { margin: 12.7mm; }
@@ -85,6 +85,12 @@ export async function exportPoemPDF(poem, { host = window, fontStylesheet = new 
     page.textContent = printPageSize(article.getBoundingClientRect().width).css;
     document.head.appendChild(page);
     tools.textContent = '';
+    // Some mobile browsers silently drop the automatic print() below once the awaits
+    // above have spent the user-gesture window, so this button must stay visible
+    // and explained rather than reading as an unexplained leftover control.
+    const label = document.createElement('span');
+    label.textContent = 'Ready to print. ';
+    tools.appendChild(label);
     const print = document.createElement('button');
     print.type = 'button';
     print.textContent = 'Print / Save as PDF';

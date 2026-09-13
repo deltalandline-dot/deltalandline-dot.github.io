@@ -1,11 +1,12 @@
-import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut,listCollection,setPhotoFeatured,removePhoto} from '../shared/connection.js?v=d113b4a25cc4';
-import {DISPLAY_MS,choosePhoto,frameSize,photoPosition} from './gallery.js?v=d113b4a25cc4';
+import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut,listCollection,setPhotoFeatured,removePhoto} from '../shared/connection.js?v=b71527aa4e21';
+import {DISPLAY_MS,choosePhoto,frameSize,photoPosition} from './gallery.js?v=b71527aa4e21';
 const $=id=>document.getElementById(id);let photos=[],current=0,timer=null,showing=null,generation=0,previewUrl=null,galleryRequest=0,selectionGeneration=0,uploading=false,uploadQueue=[],collectionRequest=0;
 const seenPhotos=new Set();
 try{const saved=JSON.parse(sessionStorage.getItem('gallery-seen')||'[]');if(Array.isArray(saved))for(const id of saved)if(typeof id==='string')seenPhotos.add(id);}catch{}
 function rememberPhoto(id){if(seenPhotos.has(id)&&showing?.id!==id)seenPhotos.clear();seenPhotos.add(id);const active=new Set(photos.map(photo=>photo.id));for(const old of seenPhotos)if(!active.has(old))seenPhotos.delete(old);try{sessionStorage.setItem('gallery-seen',JSON.stringify([...seenPhotos]));}catch{}}
 const inCollection=()=>['#upload','#collection'].includes(location.hash);
 $('menu-button').onclick=()=>{$('menu').hidden=!$('menu').hidden;$('menu-button').setAttribute('aria-expanded',String(!$('menu').hidden));};
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('menu').hidden){$('menu').hidden=true;$('menu-button').setAttribute('aria-expanded','false');$('menu-button').focus();}});
 let previousSide=null,nextSide=null,nextPhoto=null,sideGeneration=0,animations=new Set(),pushAnimations=new Set();
 const reducedMotion=()=>globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 function position(item,slot='center',anchor=showing||item){const width=$('gallery').clientWidth||innerWidth,height=$('gallery').clientHeight||innerHeight;return photoPosition(width,height,item.orientation==='portrait',slot,width<=600?24:32,anchor.orientation==='portrait');}
@@ -73,7 +74,7 @@ addEventListener('pagehide',()=>{clearTimeout(timer);clearMotion();galleryReques
 addEventListener('hashchange',route);addEventListener('resize',resize);document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(timer);clearMotion();generation++;galleryRequest++;}else resumeGallery();});
 function renderUploadQueue(){
  const list=$('upload-queue');list.replaceChildren();
- for(const item of uploadQueue){const row=document.createElement('li'),name=document.createElement('span'),state=document.createElement('span');name.textContent=item.file.name;state.className='queue-state';state.textContent=item.error||({ready:'Ready',preparing:'Preparing…',uploading:configured?'Publishing…':'Saving…',done:configured?'Published':'Saved on this Mac',failed:'Couldn’t save',invalid:'Not supported'}[item.state]);row.append(name,state);list.append(row);}
+ for(const item of uploadQueue){const row=document.createElement('li'),name=document.createElement('span'),state=document.createElement('span');name.textContent=item.file.name;state.className='queue-state';state.textContent=item.error||({ready:'Ready',preparing:'Preparing…',uploading:configured?'Publishing…':'Saving…',done:configured?'Published':'Saved on this Mac',failed:'Couldn’t save',invalid:'Not supported'}[item.state]);state.setAttribute('data-state',['failed','invalid'].includes(item.state)?'error':item.state);row.append(name,state);list.append(row);}
  const pending=uploadQueue.filter(item=>['ready','failed'].includes(item.state));
  $('upload-form').hidden=!pending.length&&!uploading;
  $('description').hidden=uploadQueue.length!==1;
@@ -84,7 +85,7 @@ function renderUploadQueue(){
 $('file').onchange=async()=>{
  if(uploading)return;
  const token=++selectionGeneration;if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}
- $('preview').hidden=true;$('description').value='';$('status').textContent='';
+ $('preview').hidden=true;$('description').value='';$('status').textContent='';$('status').removeAttribute('data-state');
  uploadQueue=Array.from($('file').files,file=>{let error='';if(file.size>20*1024*1024)error='Too large — maximum 20 MB';else if(!['image/jpeg','image/png','image/webp'].includes(file.type))error='Choose JPEG, PNG or WebP';return {file,id:crypto.randomUUID(),description:file.name.replace(/\.[^.]+$/,'').slice(0,300),state:error?'invalid':'ready',error};});
  renderUploadQueue();const first=uploadQueue.find(item=>item.state==='ready');if(!first)return;
  const url=URL.createObjectURL(first.file);previewUrl=url;const img=new Image();img.src=url;
@@ -153,7 +154,7 @@ $('sign-out').onclick=async()=>{if(uploading)return;clearCollection();signOut();
 $('upload-form').onsubmit=async event=>{
  event.preventDefault();if(uploading)return;
  const pending=uploadQueue.filter(item=>['ready','failed'].includes(item.state));if(!pending.length)return;
- uploading=true;selectionGeneration++;$('file').disabled=true;$('description').disabled=true;$('sign-out').disabled=true;
+ uploading=true;selectionGeneration++;$('file').disabled=true;$('description').disabled=true;$('sign-out').disabled=true;$('status').removeAttribute('data-state');
  if(uploadQueue.length===1&&pending[0].state==='ready')pending[0].description=$('description').value.trim()||pending[0].description;
  try{
   for(const item of pending){
@@ -167,6 +168,7 @@ $('upload-form').onsubmit=async event=>{
   uploading=false;$('file').disabled=false;$('description').disabled=false;$('sign-out').disabled=false;renderUploadQueue();
   const done=uploadQueue.filter(item=>item.state==='done').length,failed=uploadQueue.filter(item=>item.state==='failed').length,invalid=uploadQueue.filter(item=>item.state==='invalid').length;
   $('status').textContent=`${done} of ${uploadQueue.length} ${configured?'published':'saved on this Mac'}.${done?' Added to the rotation.':''}${failed?` ${failed} couldn’t be saved. Retry failed photos to try those again.`:''}${invalid?` ${invalid} unsupported ${invalid===1?'file was':'files were'} skipped.`:''}`;
+  $('status').setAttribute('data-state',failed||invalid?'error':'saved');
   if(done===uploadQueue.length)$('file').value='';
   if(done&&inCollection())await loadCollection();
  }

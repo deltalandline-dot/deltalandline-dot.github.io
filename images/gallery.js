@@ -15,7 +15,9 @@ export function choosePhoto(photos, currentId, random = Math.random, seen = new 
     .sort((a, b) =>
       (Date.parse(b.photo.createdAt) || 0) - (Date.parse(a.photo.createdAt) || 0)
       || b.index - a.index
-    );
+    )
+    // The sorted position doubles as recency rank; no need to look it up again below.
+    .map((entry, rank) => ({ ...entry, rank }));
   const available = ranked.filter(entry =>
     !seen.has(entry.photo.id) && entry.photo.id !== currentId
   );
@@ -24,7 +26,6 @@ export function choosePhoto(photos, currentId, random = Math.random, seen = new 
   // Newest: 20; next two: 8; next five: 3; older: 1.
   // Featuring multiplies that weight by four without bypassing the cycle.
   const choices = pool
-    .map(entry => ({ ...entry, rank: ranked.indexOf(entry) }))
     .map(entry => ({
       ...entry,
       weight: (entry.rank === 0 ? 20 : entry.rank < 3 ? 8 : entry.rank < 8 ? 3 : 1)

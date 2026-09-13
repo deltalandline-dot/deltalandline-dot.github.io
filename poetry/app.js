@@ -1,12 +1,12 @@
-import {createSaveQueue} from '../shared/save-queue.js?v=d113b4a25cc4';
-import {querySubmissions} from '../shared/submission-query.js?v=d113b4a25cc4';
-import {listVenues,saveVenue} from '../shared/venues.js?v=d113b4a25cc4';
-import {exportPoemPDF} from '../shared/poem-pdf.js?v=d113b4a25cc4';
-import {analyzePoem} from '../shared/prosody.js?v=d113b4a25cc4';
-import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=d113b4a25cc4';
-import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=d113b4a25cc4';
-import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=d113b4a25cc4';
-import {readingOrder} from './order.js?v=d113b4a25cc4';
+import {createSaveQueue} from '../shared/save-queue.js?v=b71527aa4e21';
+import {querySubmissions} from '../shared/submission-query.js?v=b71527aa4e21';
+import {listVenues,saveVenue} from '../shared/venues.js?v=b71527aa4e21';
+import {exportPoemPDF} from '../shared/poem-pdf.js?v=b71527aa4e21';
+import {analyzePoem} from '../shared/prosody.js?v=b71527aa4e21';
+import {normalizeLayout,formatSelection,applyPoemLayout,renderPoem} from '../shared/poem-format.js?v=b71527aa4e21';
+import {configured,accessToken,signIn,acceptSignInLink,signOut} from '../shared/connection.js?v=b71527aa4e21';
+import {publishedPoems,loadStudio,saveCollection,listPoemComments,addPoemComment,resolvePoemComment} from '../shared/poetry-store.js?v=b71527aa4e21';
+import {readingOrder} from './order.js?v=b71527aa4e21';
 let venues=[],venueReady=false;const tableQueries=new Map();
 let readerFlight=null,readerLoaded=false,studioFlight=null;
 let backendReady=false,active,permissions={editPoems:false,manageSubmissions:false,comment:false},commentRequest=0,commentAnchor='';
@@ -19,7 +19,7 @@ function route(load=true){const view=currentView();for(const name of ['read','wr
  $('studio-sign-out').hidden=!configured||!backendReady;applyPermissions();
  if(load!==false){if(view==='read')ensureReader();else ensureStudio();}
 }
-addEventListener('hashchange',route);addEventListener('keydown',e=>{if(e.key==='Escape'){menu.hidden=true;$('studio-toggle').setAttribute('aria-expanded','false');}});
+addEventListener('hashchange',route);addEventListener('keydown',e=>{if(e.key==='Escape'&&!menu.hidden){menu.hidden=true;$('studio-toggle').setAttribute('aria-expanded','false');$('studio-toggle').focus();}});
 let index=0,count=0;const pages=$('pages');
 function controls(){index=Math.round(pages.scrollLeft/Math.max(1,pages.clientWidth));$('previous').disabled=index<=0;$('next').disabled=index>=count-1;$('position').textContent=count?`${index+1} / ${count}`:'';}
 function turn(direction){const target=Math.max(0,Math.min(count-1,index+direction));if(target===index)return;pages.scrollTo({left:target*pages.clientWidth,behavior:motion.matches?'instant':'smooth'});}
@@ -33,12 +33,12 @@ if(currentView()==='read')dispatchEvent(new Event('site-ready'));
 const key='verse-web-drafts-v1';let drafts=[],revisions={},submissions=[];
 function ensureStudio(){
  if(backendReady)return Promise.resolve();if(studioFlight)return studioFlight;
- $('studio-auth').hidden=true;$('save-state').textContent='Loading studio…';
+ $('studio-auth').hidden=true;$('save-state').textContent='Loading studio…';$('save-state').removeAttribute('data-state');
  studioFlight=(async()=>{
   try{await acceptSignInLink();
    if(!configured){try{const local=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(local))drafts=local;}catch{}}
    const studio=await loadStudio();drafts=studio.drafts;submissions=studio.submissions;revisions=studio.revisions;permissions=studio.permissions||{editPoems:false,manageSubmissions:false,comment:false};backendReady=true;active=drafts[0]?.id;
-  }catch(error){$('save-state').textContent=configured?error.message:'Studio unavailable — export a copy';}
+  }catch(error){$('save-state').textContent=configured?error.message:'Studio unavailable — export a copy';$('save-state').setAttribute('data-state','error');}
   route(false);if(currentView()!=='read')dispatchEvent(new Event('site-ready'));
   if(backendReady&&configured&&!venueReady)loadVenueDirectory();
  })().finally(()=>{studioFlight=null;});return studioFlight;
@@ -48,12 +48,12 @@ const draftSaves=createSaveQueue(async()=>{
  const snapshot=JSON.parse(JSON.stringify(drafts));
  if(!configured)localStorage.setItem(key,JSON.stringify(snapshot));
  revisions.drafts=await saveCollection('drafts',snapshot,revisions.drafts);
-},{onState:(state,error)=>{$('save-state').textContent=state==='error'?error.message:state==='saved'?(configured?'Saved to your online studio':'Saved on this Mac'):'Saving…';}});
+},{onState:(state,error)=>{$('save-state').textContent=state==='error'?error.message:state==='saved'?(configured?'Saved to your online studio':'Saved on this Mac'):'Saving…';$('save-state').setAttribute('data-state',state);}});
 addEventListener('beforeunload',event=>{if(draftSaves.pending()||submissionSaves.pending()){event.preventDefault();event.returnValue='';}});
 addEventListener('pagehide',()=>{draftSaves.flush();submissionSaves.flush();});
 function persist(immediate=true){
  if(!permissions.editPoems)return Promise.resolve(false);
- if(!backendReady){$('save-state').textContent='Studio offline — export a copy';return Promise.resolve(false);}
+ if(!backendReady){$('save-state').textContent='Studio offline — export a copy';$('save-state').setAttribute('data-state','error');return Promise.resolve(false);}
  return draftSaves.save({immediate});
 }
 function list(){const root=$('draft-list'),scroll=root.scrollTop;root.replaceChildren();for(const draft of drafts){const button=document.createElement('button');button.textContent=draft.title||'Untitled';button.setAttribute('aria-current',String(draft.id===active));button.onclick=()=>openDraft(draft.id);root.append(button);}root.scrollTop=scroll;}
@@ -90,13 +90,14 @@ function renderSubmissionTable(records,items){
  const state=tableQueries.get(records.id)||{filters:{},sortKey:'',direction:'asc'};tableQueries.set(records.id,state);
  const columns=[['piece','Piece'],['venue','Venue'],['sent','Sent'],['submitBy','Submit by'],['status','Status'],['response','Response'],['notes','Notes']];
  const table=document.createElement('table'),head=document.createElement('thead'),header=document.createElement('tr'),filters=document.createElement('tr'),body=document.createElement('tbody');table.className='submission-table';table.setAttribute('aria-label','Submissions');
+ const hint=document.createElement('p');hint.className='note';hint.id=records.id+'-filter-hint';hint.textContent='Filters match anywhere in the value. Type :empty to find blank entries.';
  const renderRows=()=>{body.replaceChildren();const selected=querySubmissions(items,drafts,state);for(const record of selected){const row=submissionRow(record);body.append(row,row.notesRow);}if(!selected.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=7;cell.textContent=items.length?'No matching submissions.':'No submissions recorded.';row.append(cell);body.append(row);}};
  for(const [key,label] of columns){
   const cell=document.createElement('th'),button=document.createElement('button'),filterCell=document.createElement('th'),input=document.createElement('input');cell.scope='col';button.type='button';button.textContent=label;button.setAttribute('aria-label','Sort by '+label);cell.setAttribute('aria-sort',state.sortKey===key?(state.direction==='asc'?'ascending':'descending'):'none');
   button.onclick=()=>{state.direction=state.sortKey===key&&state.direction==='asc'?'desc':'asc';state.sortKey=key;for(const th of header.children)th.setAttribute('aria-sort','none');cell.setAttribute('aria-sort',state.direction==='asc'?'ascending':'descending');renderRows();};
-  input.type='search';input.placeholder='Filter';input.value=state.filters[key]||'';input.setAttribute('aria-label','Filter '+label);input.oninput=()=>{state.filters[key]=input.value;renderRows();};cell.append(button);filterCell.append(input);header.append(cell);filters.append(filterCell);
+  input.type='search';input.placeholder='Filter';input.value=state.filters[key]||'';input.setAttribute('aria-label','Filter '+label);input.title='Type :empty to find blank entries.';input.setAttribute('aria-describedby',hint.id);input.oninput=()=>{state.filters[key]=input.value;renderRows();};cell.append(button);filterCell.append(input);header.append(cell);filters.append(filterCell);
  }
- head.append(header,filters);table.append(head,body);records.append(table);renderRows();
+ head.append(header,filters);table.append(head,body);records.append(table,hint);renderRows();
 }
 function submissionRow(record){
  const row=document.createElement('tr'),title=document.createElement('td'),status=document.createElement('select'),response=document.createElement('input'),notes=document.createElement('textarea');
@@ -135,8 +136,8 @@ function submissionRow(record){
  return row;
 
 }
-const submissionSaves=createSaveQueue(async()=>{const snapshot=JSON.parse(JSON.stringify(submissions));revisions.submissions=await saveCollection('submissions',snapshot,revisions.submissions);},{onState:(state,error)=>submissionSaveState(state==='error'?error.message:state==='saved'?(configured?'Saved to your online studio':'Saved on this Mac'):'Saving…')});
-function submissionSaveState(message){$('review-state').textContent=message;$('draft-submission-state').textContent=message;}
+const submissionSaves=createSaveQueue(async()=>{const snapshot=JSON.parse(JSON.stringify(submissions));revisions.submissions=await saveCollection('submissions',snapshot,revisions.submissions);},{onState:(state,error)=>submissionSaveState(state==='error'?error.message:state==='saved'?(configured?'Saved to your online studio':'Saved on this Mac'):'Saving…',state)});
+function submissionSaveState(message,state='error'){$('review-state').textContent=message;$('review-state').setAttribute('data-state',state);$('draft-submission-state').textContent=message;$('draft-submission-state').setAttribute('data-state',state);}
 function saveSubmissions(){if(!permissions.manageSubmissions||!backendReady)return Promise.resolve(false);return submissionSaves.save({immediate:true});}
 const pendingSubmissionForms=new Map();
 async function addSubmission(event,prefix,poemId,render){
@@ -164,7 +165,7 @@ function applyPermissions(){
  for(const el of document.querySelectorAll('#comment-form button,#comment-body'))el.disabled=!backendReady||!permissions.comment;
  if(backendReady&&!canEdit)$('studio-note').textContent='Editorial access: read poems, leave comments, and manage submissions. Poem text and publication choices are read-only.';
 }
-$('export-pdf').onclick=async()=>{const draft=drafts.find(d=>d.id===active);if(!draft)return;try{await exportPoemPDF({...draft,publications:[...new Set(submissions.filter(s=>s.poemId===active&&s.status==='accepted').map(s=>s.magazine).filter(Boolean))]});}catch(error){$('save-state').textContent=error.message;}};
+$('export-pdf').onclick=async()=>{const draft=drafts.find(d=>d.id===active);if(!draft)return;try{await exportPoemPDF({...draft,publications:[...new Set(submissions.filter(s=>s.poemId===active&&s.status==='accepted').map(s=>s.magazine).filter(Boolean))]});}catch(error){$('save-state').textContent=error.message;$('save-state').setAttribute('data-state','error');}};
 $('draft-submission-form').onsubmit=event=>addSubmission(event,'draft-',active,renderDraftSubmissions);
 $('comment-anchor').onclick=()=>{const editor=$('draft-body');commentAnchor=editor.value.slice(editor.selectionStart,editor.selectionEnd).slice(0,300);$('comment-selection').textContent=commentAnchor?'Selected: '+commentAnchor:'No words selected — this will be a general comment.';};
 async function renderComments(){
