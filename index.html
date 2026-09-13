@@ -129,11 +129,11 @@ body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 .navigation .menu-item{opacity:1;visibility:visible;transition:left .28s ease,opacity .16s ease .28s,visibility 0s .28s}
 
 .navigation .menu-toggle{left:50%;width:44px;height:52px;padding:6px;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s ease,visibility 0s .16s}
-.navigation[data-collapsed="true"] .menu-item{left:50%;opacity:0;visibility:hidden;pointer-events:none;transition:left .28s ease .12s,opacity .12s ease,visibility 0s .12s}
+.navigation[data-collapsed="true"] .menu-item{left:50%;opacity:0;visibility:hidden;pointer-events:none;transition:left .28s ease .12s,opacity .12s ease,visibility 0s .12s,top 0s .12s}
 
 .navigation[data-collapsed="true"] .menu-toggle{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .2s ease .2s,visibility 0s .2s}
 .navigation .menu-toggle:focus-visible{opacity:1;visibility:visible;transition:none}
-.navigation[data-open="true"] .menu-item[aria-label]{opacity:1;visibility:visible;pointer-events:auto;transition:none}
+.navigation[data-open="true"] .menu-item[aria-label]{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .2s ease,visibility 0s}
 .navigation[data-open="true"] .menu-toggle{transition:none}
 .navigation:not([data-ready="true"]) button{transition:none!important}
 .navigation[data-open="true"] .menu-item{left:50%;top:calc(min(var(--menu-y,25%),calc(100% - 264px)) + (var(--row) + 1)*44px)}
@@ -195,17 +195,17 @@ function inside(x,y){let hit=false;for(let i=0,j=boundary.length-1;i<boundary.le
 const viewport=document.querySelector('.viewport');
 const navigation=document.querySelector('.navigation'),toggle=document.getElementById('menu-toggle');
 const menuItems=[...document.querySelectorAll('.menu-item:not([data-coming-soon])')];
-const poetryIndex=menuItems.findIndex(button=>button.getAttribute?.('aria-label')==='POETRY');
-const menuAnchor=poetryIndex>=0?poetryIndex:Math.floor((menuItems.length-1)/2);
 let menuWidth=0,collapsed=false,menuOpen=false;
 function measureMenu(){
  menuItems.forEach(button=>button.hidden=false);
  const widths=menuItems.map(button=>button.offsetWidth),gap=8;
  menuWidth=widths.reduce((sum,w)=>sum+w,0)+gap*(widths.length-1);
+ // Centers are already symmetric about 0 by construction: this keeps the
+ // whole visible group centered, however many items are shown or hidden,
+ // rather than pinning any single label off-center.
  let offset=-menuWidth/2;const centers=widths.map(w=>{const center=offset+w/2;offset+=w+gap;return center;});
- const middle=centers[menuAnchor];
- menuWidth=2*Math.max(...centers.map((center,i)=>Math.abs(center-middle)+widths[i]/2));
- menuItems.forEach((button,i)=>button.style.setProperty('--menu-offset',`${centers[i]-middle}px`));
+ menuWidth=2*Math.max(...centers.map((center,i)=>Math.abs(center)+widths[i]/2));
+ menuItems.forEach((button,i)=>button.style.setProperty('--menu-offset',`${centers[i]}px`));
 }
 function showMenu(){
  navigation.dataset.open=String(collapsed&&menuOpen);
