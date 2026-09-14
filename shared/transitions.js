@@ -1,4 +1,4 @@
-import {setCamera} from './zoom.js?v=b71527aa4e21';
+import {setCamera} from './zoom.js?v=034db3eb3bb8';
 // A single real navigation, with a solid curtain spanning the document change.
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
 const release=new URL(import.meta.url).searchParams.get('v');

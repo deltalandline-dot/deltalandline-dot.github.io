@@ -1,5 +1,5 @@
-import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut,listCollection,setPhotoFeatured,removePhoto} from '../shared/connection.js?v=b71527aa4e21';
-import {DISPLAY_MS,choosePhoto,frameSize,photoPosition} from './gallery.js?v=b71527aa4e21';
+import {configured,listPhotos,publishPhoto,preparedPhoto,accessToken,signIn,acceptSignInLink,signOut,listCollection,setPhotoFeatured,removePhoto} from '../shared/connection.js?v=034db3eb3bb8';
+import {DISPLAY_MS,choosePhoto,frameSize,photoPosition} from './gallery.js?v=034db3eb3bb8';
 const $=id=>document.getElementById(id);let photos=[],current=0,timer=null,showing=null,generation=0,previewUrl=null,galleryRequest=0,selectionGeneration=0,uploading=false,uploadQueue=[],collectionRequest=0;
 const seenPhotos=new Set();
 try{const saved=JSON.parse(sessionStorage.getItem('gallery-seen')||'[]');if(Array.isArray(saved))for(const id of saved)if(typeof id==='string')seenPhotos.add(id);}catch{}

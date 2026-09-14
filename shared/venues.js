@@ -1,5 +1,5 @@
-import {cloud} from './config.js?v=b71527aa4e21';
-import {configured,accessToken} from './connection.js?v=b71527aa4e21';
+import {cloud} from './config.js?v=034db3eb3bb8';
+import {configured,accessToken} from './connection.js?v=034db3eb3bb8';
 const fields='id,name,submission_url,format';
 async function request(path,options={}){
  if(!configured)throw Error('The venue directory requires the online studio.');
